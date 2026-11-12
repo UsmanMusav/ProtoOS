@@ -10,7 +10,7 @@ import struct
 import sys
 from pathlib import Path
 
-from build import BUILD, EPOCH, obtain_kernel, obtain_pinned_file, build_initramfs, fail
+from build import BUILD, EPOCH, obtain_hyperv_kernel, obtain_pinned_file, build_initramfs, fail
 
 ROOT = Path(__file__).resolve().parents[1]
 LIMINE_REPOSITORY = "https://github.com/limine-bootloader/limine.git"
@@ -44,11 +44,11 @@ default_entry: 1
 verbose: yes
 graphics: no
 
-/ProtoOS Hyper-V Live 0.2.2 (diagnostic)
+/ProtoOS Hyper-V Live 0.3.0 (Hyper-V console)
     protocol: linux
     path: boot():/EFI/BOOT/KERNEL.EFI
     module_path: boot():/EFI/BOOT/INITRD.IMG
-    cmdline: console=tty0 earlycon=efi,keep loglevel=7 ignore_loglevel
+    cmdline: console=ttyS0,115200n8 console=tty0 earlycon=efi,keep efi=novamap loglevel=7 ignore_loglevel
 """
 
 
@@ -257,7 +257,7 @@ def fixed_vhd_footer(virtual_size: int) -> bytes:
 
 
 def build_vhd(destination: Path) -> None:
-    kernel = obtain_kernel().read_bytes()
+    kernel = obtain_hyperv_kernel().read_bytes()
     limine = obtain_limine_bootx64().read_bytes()
     initrd = build_initramfs().read_bytes()
     esp = fat16_esp({
@@ -314,7 +314,7 @@ def build_vhd(destination: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-HyperV-0.2.2.vhd")
+    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-HyperV-0.3.0.vhd")
     args = parser.parse_args()
     try:
         build_vhd(args.output)

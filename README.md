@@ -1,103 +1,63 @@
 # ProtoOS Live
 
-**ProtoOS** — учебная минимальная Live-система на Linux для `x86_64`. Она запускает BusyBox в памяти и даёт интерактивную консоль `ProtoOS#`. На диск гостевой машины ничего не устанавливается.
+**ProtoOS** — учебная Linux Live-система `x86_64`: Linux запускает статический BusyBox из initramfs и открывает консоль `ProtoOS#`. Установка на диск гостя не выполняется.
 
-> Это ранняя тестовая сборка, а не система для повседневного использования или хранения данных.
+> Это тестовая сборка. Не используйте её для данных или повседневной работы.
 
-## Hyper-V: диагностический образ 0.2.2 VHD
+## Hyper-V: VHD 0.3.0
 
-Ранние ISO (`0.1.0`–`0.1.3`) предназначались для отладки UEFI CD boot и не проходят загрузку на использованной прошивке Hyper-V. Чтобы не зависеть от особенностей El Torito/оптического привода, для Hyper-V подготовлен отдельный образ:
+Для Hyper-V используется fixed VHD с GPT и EFI System Partition:
 
 ```text
-ProtoOS-HyperV-0.2.2.vhd
+ProtoOS-HyperV-0.3.0.vhd
 ```
 
-Это **fixed VHD** с нормальной GPT-разметкой и EFI System Partition. В ESP находятся:
+Внутри находятся Limine 8.7.0, настоящее VFAT-длинное имя `limine.conf`, initramfs и отдельное Linux 6.1.0 EFI-stub ядро. Оно собрано с драйверами гостя Microsoft Hyper-V, EFI early console, EFI framebuffer и framebuffer console. Это заменяет прежнее стороннее ядро, в котором отсутствовала необходимая конфигурация консоли — поэтому после выбора пункта Limine пользователь видел только чёрный экран.
 
-- `/EFI/BOOT/BOOTX64.EFI` — Limine 8.7.0;
-- `LIMINE.CONF` — конфигурация загрузки нового формата Limine 8;
-- Linux EFI-stub kernel;
-- initramfs с BusyBox.
+Меню Limine остаётся на экране. Выберите:
 
-Hyper-V подключает VHD как обычный виртуальный диск, поэтому не нужен DVD boot prompt и не используется нестабильная загрузка с самодельного ISO. В 0.2.2 конфигурация записана под настоящим длинным именем `limine.conf`; это включает новый формат конфигурации Limine 8 и устраняет предупреждение/сообщение `config file contains no valid entries` из 0.2.0. Меню Limine намеренно остаётся на экране: выберите ProtoOS стрелками и нажмите Enter; при ошибке ядра включены подробные ранние сообщения.
+```text
+ProtoOS Hyper-V Live 0.3.0 (Hyper-V console)
+```
 
-## Запуск VHD в Hyper-V
+и нажмите **Enter**. Ядро получает `earlycon=efi,keep`, `console=tty0` и подробное логирование; его вывод и последующее приглашение должны быть видны в окне Hyper-V.
 
-1. Полностью **выключите** виртуальную машину.
-2. Откройте **Settings → SCSI Controller → Hard Drive**.
-3. Если там есть пустой старый VHDX, нажмите **Remove**.
-4. Нажмите **Add**, выберите **Hard Drive** и укажите файл `ProtoOS-HyperV-0.2.2.vhd`.
-5. Откройте **Settings → Firmware** и поставьте **Hard Drive** на первое место.
-6. В **Settings → Security** выключите **Enable Secure Boot**.
-7. ВМ должна быть **Generation 2**.
-8. Запустите ВМ.
+## Запуск в Hyper-V (русская локализация)
 
-Для этого способа DVD и ISO не нужны. Можно отключить DVD Drive или извлечь из него ISO.
+1. Полностью выключите ВМ.
+2. В **Параметры → Контроллер SCSI → Жесткий диск** удалите старый VHD и подключите `ProtoOS-HyperV-0.3.0.vhd`.
+3. В **Параметры → Встроенное ПО** поставьте **Жесткий диск** первым.
+4. В **Параметры → Безопасность** снимите флажок **Включить безопасную загрузку**.
+5. ВМ должна быть **Поколение 2**. DVD/ISO отключите.
+6. Запустите ВМ, выберите пункт ProtoOS в Limine и нажмите **Enter**.
 
-Ожидаемый результат: появится Limine, затем экран ProtoOS и приглашение:
+Ожидаемое приглашение:
 
 ```text
 ProtoOS#
 ```
 
-Первые команды для проверки:
+Для проверки: `help`, `sysinfo`, `uname -a`, `cat /etc/os-release`, `poweroff`.
 
-```sh
-help
-sysinfo
-uname -a
-cat /etc/os-release
-ls /
-poweroff
-```
+## Локальная сборка и проверки
 
-## ISO 0.1.3
-
-`ProtoOS-0.1.3-x86_64.iso` сохраняется как экспериментальный ISO-артефакт и проходит структурную проверку ISO-9660, El Torito, FAT12, MBR и GPT. Но для Hyper-V используйте VHD до тех пор, пока CD-загрузка не будет проверена на реальном Hyper-V.
-
-## Локальная сборка
-
-Требования:
-
-- Linux `x86_64`;
-- `python3` и `git`;
-- статический BusyBox по пути `/usr/bin/busybox`.
+Требуются `python3`, `git` и статический BusyBox в `/usr/bin/busybox`.
 
 ```sh
 make vhd
 make check-vhd
 ```
 
-или для экспериментального ISO:
+`make check-vhd` проверяет fixed VHD footer, MBR/GPT, FAT16 ESP, Limine, Linux EFI-stub и gzip initramfs.
 
-```sh
-make iso
-make check
-```
+## Происхождение компонентов
 
-## Автоматическая проверка VHD
+| Компонент | Источник / версия | SHA-256 |
+| --- | --- | --- |
+| Hyper-V Linux EFI-stub | Linux 6.1.0 (`torvalds/linux` `7614896350aa20764c5eca527262d9eb0a57da63`), конфигурация на основе WSL 6.1 с включёнными Hyper-V/EFI-console/framebuffer драйверами | `59ee81bedc390ef83f3b1c6f334419ff404d49b10817ae20670036061f9e5a7d` |
+| Limine EFI | limine-bootloader/limine, `aad3edd370955449717a334f0289dee10e2c5f01` | `51ca2b20ed14bbc678a396cdfb0c1d941acbc155cabebc9bfafabe4cdae1be73` |
+| Experimental ISO Linux EFI-stub | RedMoonnn/MicroLinux, `00a515d49c59f31c9c5e258928ac368012ac1ea6` | `dca8ba50d3ac9867073b54b7d694d019c9e048560102ddd4f9b2563df00686fd` |
 
-`make check-vhd` проверяет:
+## Ограничения
 
-- формат fixed VHD и контрольную сумму footer;
-- защитный MBR;
-- primary GPT и CRC таблицы разделов;
-- EFI System Partition FAT16;
-- обязательные EFI, Limine, kernel и initramfs файлы.
-
-## Проверяемые внешние компоненты
-
-Сборщик получает и сверяет SHA-256 зафиксированных бинарных входов:
-
-| Компонент | Источник | Commit | SHA-256 |
-| --- | --- | --- | --- |
-| Linux EFI stub | [RedMoonnn/MicroLinux](https://github.com/RedMoonnn/MicroLinux) | `00a515d49c59f31c9c5e258928ac368012ac1ea6` | `dca8ba50d3ac9867073b54b7d694d019c9e048560102ddd4f9b2563df00686fd` |
-| Limine EFI application | [limine-bootloader/limine](https://github.com/limine-bootloader/limine) | `aad3edd370955449717a334f0289dee10e2c5f01` | `51ca2b20ed14bbc678a396cdfb0c1d941acbc155cabebc9bfafabe4cdae1be73` |
-
-## Ограничения 0.2.2
-
-- только `x86_64 UEFI` и Hyper-V Generation 2;
-- только английская консоль и минимальный набор BusyBox;
-- нет установки на диск, сети, графической оболочки, пользователей или сохранения данных;
-- Secure Boot пока не поддерживается;
-- запуск на физическом компьютере не является целью этой версии.
+Только Hyper-V Generation 2 и x86_64 UEFI; Secure Boot, сеть, графическая оболочка и сохранение данных пока не поддерживаются. Старые ISO и VHD 0.2.x — устаревшие диагностические варианты.

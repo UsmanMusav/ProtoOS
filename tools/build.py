@@ -19,6 +19,8 @@ BUILD = ROOT / "build"
 KERNEL_REPOSITORY = "https://github.com/RedMoonnn/MicroLinux.git"
 KERNEL_COMMIT = "00a515d49c59f31c9c5e258928ac368012ac1ea6"
 KERNEL_SHA256 = "dca8ba50d3ac9867073b54b7d694d019c9e048560102ddd4f9b2563df00686fd"
+HYPERV_KERNEL = ROOT / "assets" / "linux-6.1.0-hyperv-bzImage"
+HYPERV_KERNEL_SHA256 = "59ee81bedc390ef83f3b1c6f334419ff404d49b10817ae20670036061f9e5a7d"
 LIMINE_REPOSITORY = "https://github.com/limine-bootloader/limine.git"
 LIMINE_COMMIT = "aad3edd370955449717a334f0289dee10e2c5f01"  # Limine 8.7.0 binary release
 LIMINE_UEFI_CD_SHA256 = "0ea0aa408c464014a306840acc843dc564e54f602b2077852ceb34178488bd03"
@@ -69,6 +71,16 @@ def obtain_kernel() -> Path:
     )
 
 
+def obtain_hyperv_kernel() -> Path:
+    """Return the bundled Linux kernel configured for Hyper-V UEFI consoles."""
+    if not HYPERV_KERNEL.exists():
+        fail(f"The Hyper-V Linux kernel is missing: {HYPERV_KERNEL}")
+    actual = sha256(HYPERV_KERNEL)
+    if actual != HYPERV_KERNEL_SHA256:
+        fail(f"Hyper-V Linux kernel checksum mismatch: expected {HYPERV_KERNEL_SHA256}, got {actual}")
+    return HYPERV_KERNEL
+
+
 def obtain_limine_uefi_cd() -> Path:
     return obtain_pinned_file(
         LIMINE_REPOSITORY, "v8.x-binary", LIMINE_COMMIT, "limine-uefi-cd.bin",
@@ -117,7 +129,7 @@ export PATH=/bin
 /bin/mount -t sysfs sysfs /sys
 /bin/clear
 echo '================================================'
-echo '             ProtoOS Live 0.1.3'
+echo '             ProtoOS Live 0.3.0'
 echo '       Minimal Linux environment is ready'
 echo '================================================'
 echo ''
@@ -133,7 +145,7 @@ exec /bin/sh
   echo '  poweroff     Shut down the virtual machine'
 }
 sysinfo() {
-  echo 'ProtoOS Live 0.1.3'
+  echo 'ProtoOS Live 0.3.0'
   uname -a
   echo
   echo 'Memory:'
@@ -142,9 +154,9 @@ sysinfo() {
 export PS1='ProtoOS# '
 """
     os_release = b"""NAME=ProtoOS
-VERSION=0.1.3
+VERSION=0.3.0
 ID=protoos
-PRETTY_NAME=\"ProtoOS Live 0.1.3\"
+PRETTY_NAME=\"ProtoOS Live 0.3.0\"
 HOME_URL=\"https://github.com/UsmanMusav/ProtoOS\"
 """
     archive = bytearray()
@@ -180,7 +192,7 @@ def limine_config() -> bytes:
 default_entry: 1
 verbose: yes
 
-/ProtoOS Live 0.1.3
+/ProtoOS Live 0.3.0
     protocol: linux
     path: boot():/KERNEL.EFI
     module_path: boot():/INITRD.IMG
@@ -423,7 +435,7 @@ def build_iso(limine_cd: bytes, config: bytes, kernel: bytes, initramfs: bytes, 
     path_be[10:22] = bytes((4, 0)) + struct.pack(">I", boot_directory_lba) + struct.pack(">H", 1) + b"BOOT"
 
     readme = (
-        "ProtoOS Live 0.1.3\r\n"
+        "ProtoOS Live 0.3.0\r\n"
         "UEFI x86_64 Linux live image.\r\n"
         "Secure Boot must be disabled for this development build.\r\n"
     ).encode("ascii")
