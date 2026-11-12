@@ -1,0 +1,10 @@
+# Build products and locally fetched inputs
+/build/
+/dist/
+*.iso
+*.img
+*.efi
+*.o
+*.so
+__pycache__/
+*.pyc
