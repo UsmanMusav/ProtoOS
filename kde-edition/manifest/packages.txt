@@ -5,8 +5,9 @@
 systemd-sysv
 sddm
 plasma-desktop
+# On Debian Trixie, plasma-workspace supplies the Plasma X11 session named
+# "plasma"; there is no separate plasma-workspace-x11 binary package.
 plasma-workspace
-plasma-workspace-x11
 plasma-nm
 plasma-pa
 powerdevil
@@ -19,7 +20,6 @@ ark
 kate
 okular
 systemsettings
-kdeplasma-addons
 
 # Visual/input integration
 xserver-xorg-core
@@ -34,6 +34,6 @@ fonts-noto-color-emoji
 # Basic Live utilities
 network-manager
 sudo
-policykit-1
+polkitd
 dbus-user-session
 ca-certificates

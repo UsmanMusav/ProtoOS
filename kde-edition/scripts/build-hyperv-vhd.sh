@@ -23,6 +23,11 @@ require_root() {
 
 cleanup() {
     set +e
+    # Chroot package configuration and GRUB need real kernel pseudo-filesystems.
+    # Unmount nested bind mounts before the root filesystem and loop device.
+    for fs in run sys proc dev/pts dev; do
+        mountpoint -q "$ROOTFS/$fs" && umount "$ROOTFS/$fs"
+    done
     mountpoint -q "$ROOTFS/boot/efi" && umount "$ROOTFS/boot/efi"
     mountpoint -q "$ROOTFS" && umount "$ROOTFS"
     [ -n "${LOOP_DEVICE:-}" ] && losetup -d "$LOOP_DEVICE"
@@ -54,6 +59,13 @@ mkdir -p "$ROOTFS/boot/efi"
 mount "${LOOP_DEVICE}p1" "$ROOTFS/boot/efi"
 
 debootstrap --arch=amd64 --variant=minbase "$RELEASE" "$ROOTFS" https://deb.debian.org/debian
+
+# Package maintainer scripts, initramfs generation and EFI setup must see the
+# normal kernel pseudo-filesystems. Binding them now also avoids a half-set-up
+# systemd database during the first chrooted apt transaction.
+for fs in dev dev/pts proc sys run; do
+    mount --bind "/$fs" "$ROOTFS/$fs"
+done
 
 # Install the packages that turn the rootfs into a bootable Plasma desktop.
 cat > "$ROOTFS/tmp/protoos-base-packages.txt" <<'PACKAGES'
@@ -124,15 +136,6 @@ HOME_URL="https://github.com/UsmanMusav/ProtoOS"
 SUPPORT_URL="https://github.com/UsmanMusav/ProtoOS/issues"
 OS_RELEASE
 
-for fs in dev dev/pts proc sys run; do
-    mount --bind "/$fs" "$ROOTFS/$fs"
-done
-cleanup_chroot_mounts() {
-    for fs in run sys proc dev/pts dev; do
-        mountpoint -q "$ROOTFS/$fs" && umount "$ROOTFS/$fs"
-    done
-}
-trap 'cleanup_chroot_mounts; cleanup' EXIT
 chroot "$ROOTFS" /bin/sh -eu -c '
     systemctl enable protoos-live-home.service
     systemctl set-default graphical.target
@@ -142,8 +145,6 @@ chroot "$ROOTFS" /bin/sh -eu -c '
     apt-get clean
     rm -rf /var/lib/apt/lists/* /tmp/*
 '
-cleanup_chroot_mounts
-trap cleanup EXIT
 
 # qemu-img writes a standards-compliant dynamic VHD that Hyper-V can attach to
 # a SCSI controller. No sparse files are committed to Git; CI publishes it.
