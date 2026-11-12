@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import binascii
 import datetime as dt
 import gzip
 import hashlib
@@ -116,7 +117,7 @@ export PATH=/bin
 /bin/mount -t sysfs sysfs /sys
 /bin/clear
 echo '================================================'
-echo '             ProtoOS Live 0.1.2'
+echo '             ProtoOS Live 0.1.3'
 echo '       Minimal Linux environment is ready'
 echo '================================================'
 echo ''
@@ -132,7 +133,7 @@ exec /bin/sh
   echo '  poweroff     Shut down the virtual machine'
 }
 sysinfo() {
-  echo 'ProtoOS Live 0.1.2'
+  echo 'ProtoOS Live 0.1.3'
   uname -a
   echo
   echo 'Memory:'
@@ -141,9 +142,9 @@ sysinfo() {
 export PS1='ProtoOS# '
 """
     os_release = b"""NAME=ProtoOS
-VERSION=0.1.2
+VERSION=0.1.3
 ID=protoos
-PRETTY_NAME=\"ProtoOS Live 0.1.2\"
+PRETTY_NAME=\"ProtoOS Live 0.1.3\"
 HOME_URL=\"https://github.com/UsmanMusav/ProtoOS\"
 """
     archive = bytearray()
@@ -179,7 +180,7 @@ def limine_config() -> bytes:
 default_entry: 1
 verbose: yes
 
-/ProtoOS Live 0.1.2
+/ProtoOS Live 0.1.3
     protocol: linux
     path: boot():/KERNEL.EFI
     module_path: boot():/INITRD.IMG
@@ -222,6 +223,79 @@ def sector_count(content: bytes) -> int:
 def write_extent(stream, content: bytes) -> None:
     stream.write(content)
     stream.write(b"\0" * ((-len(content)) % SECTOR))
+
+
+def guid_le(data1: int, data2: int, data3: int, data4: bytes) -> bytes:
+    """Encode a UEFI GUID in the byte order used in GPT structures."""
+    if len(data4) != 8:
+        fail("A GUID tail must contain exactly eight bytes.")
+    return struct.pack("<IHH", data1, data2, data3) + data4
+
+
+def gpt_header(current_lba: int, backup_lba: int, first_usable: int, last_usable: int,
+               disk_guid: bytes, entries_lba: int, entries: bytes) -> bytes:
+    header = bytearray(512)
+    header[0:8] = b"EFI PART"
+    struct.pack_into("<I", header, 8, 0x00010000)
+    struct.pack_into("<I", header, 12, 92)
+    struct.pack_into("<I", header, 16, 0)  # filled after calculating the header CRC
+    struct.pack_into("<I", header, 20, 0)
+    struct.pack_into("<Q", header, 24, current_lba)
+    struct.pack_into("<Q", header, 32, backup_lba)
+    struct.pack_into("<Q", header, 40, first_usable)
+    struct.pack_into("<Q", header, 48, last_usable)
+    header[56:72] = disk_guid
+    struct.pack_into("<Q", header, 72, entries_lba)
+    struct.pack_into("<I", header, 80, 128)
+    struct.pack_into("<I", header, 84, 128)
+    struct.pack_into("<I", header, 88, binascii.crc32(entries) & 0xFFFFFFFF)
+    struct.pack_into("<I", header, 16, binascii.crc32(header[:92]) & 0xFFFFFFFF)
+    return bytes(header)
+
+
+def gpt_system_area(total_iso_sectors: int, efi_lba: int, efi_size: int) -> tuple[bytes, bytes, bytes]:
+    """Build a protective MBR plus GPT describing the El Torito FAT image as an ESP.
+
+    Hyper-V's UEFI exposes the optical ESP reliably when the ISO has this GPT
+    mapping, matching the `xorriso --efi-boot-part --efi-boot-image` layout
+    used by the Limine project.
+    """
+    total_lba = total_iso_sectors * 4  # the GPT/MBR view uses 512-byte sectors
+    entry_count = 128
+    entry_size = 128
+    entry_sectors = entry_count * entry_size // 512
+    backup_entries_lba = total_lba - 1 - entry_sectors
+    first_usable_lba = 2 + entry_sectors
+    last_usable_lba = backup_entries_lba - 1
+    efi_first_lba = efi_lba * 4
+    efi_sector_count = (efi_size + 511) // 512
+    efi_last_lba = efi_first_lba + efi_sector_count - 1
+    if not first_usable_lba <= efi_first_lba <= efi_last_lba <= last_usable_lba:
+        fail("EFI boot image cannot be represented as a GPT partition.")
+
+    # GPT type: EFI System Partition. The remaining GUIDs are stable build IDs.
+    esp_type = guid_le(0xC12A7328, 0xF81F, 0x11D2, b"\xBA\x4B\x00\xA0\xC9\x3E\xC9\x3B")
+    disk_guid = guid_le(0x50524F54, 0x4F53, 0x0120, b"\x00\x00\x00\x00\x00\x00\x00\x01")
+    partition_guid = guid_le(0x50524F54, 0x4553, 0x0120, b"\x00\x00\x00\x00\x00\x00\x00\x01")
+    entries = bytearray(entry_count * entry_size)
+    entries[0:16] = esp_type
+    entries[16:32] = partition_guid
+    struct.pack_into("<Q", entries, 32, efi_first_lba)
+    struct.pack_into("<Q", entries, 40, efi_last_lba)
+    struct.pack_into("<Q", entries, 48, 0)
+    entries[56:56 + len("ProtoOS UEFI CD".encode("utf-16le"))] = "ProtoOS UEFI CD".encode("utf-16le")
+
+    area = bytearray(16 * SECTOR)
+    # A protective MBR informs firmware and partition utilities that this is a GPT disk.
+    area[446 + 4] = 0xEE
+    struct.pack_into("<I", area, 446 + 8, 1)
+    struct.pack_into("<I", area, 446 + 12, min(total_lba - 1, 0xFFFFFFFF))
+    area[510:512] = b"\x55\xAA"
+    primary = gpt_header(1, total_lba - 1, first_usable_lba, last_usable_lba, disk_guid, 2, entries)
+    area[512:1024] = primary
+    area[2 * 512:(2 + entry_sectors) * 512] = entries
+    backup = gpt_header(total_lba - 1, 1, first_usable_lba, last_usable_lba, disk_guid, backup_entries_lba, entries)
+    return bytes(area), bytes(entries), backup
 
 
 def boot_catalog(efi_lba: int) -> bytes:
@@ -268,7 +342,12 @@ def build_iso(limine_cd: bytes, config: bytes, kernel: bytes, initramfs: bytes, 
     kernel_lba = config_lba + sector_count(config)
     initramfs_lba = kernel_lba + sector_count(kernel)
     readme_lba = initramfs_lba + sector_count(initramfs)
-    volume_sectors = readme_lba + 1
+    # Keep 33 final 512-byte sectors for the backup GPT entries and header.
+    gpt_tail_iso_sectors = 9
+    volume_sectors = readme_lba + 1 + gpt_tail_iso_sectors
+    system_area, backup_gpt_entries, backup_gpt_header = gpt_system_area(
+        volume_sectors, limine_cd_lba, len(limine_cd)
+    )
 
     # Two ISO path-table records: root (10 bytes) and BOOT (12 bytes).
     path_table_size = 22
@@ -277,7 +356,7 @@ def build_iso(limine_cd: bytes, config: bytes, kernel: bytes, initramfs: bytes, 
     pvd[1:6] = b"CD001"
     pvd[6] = 1
     pvd[8:40] = b"PROTOOS".ljust(32, b" ")
-    pvd[40:72] = b"PROTOOS_LIVE_0_1_2".ljust(32, b" ")
+    pvd[40:72] = b"PROTOOS_LIVE_0_1_3".ljust(32, b" ")
     pvd[80:88] = both32(volume_sectors)
     pvd[120:124] = both16(1)
     pvd[124:128] = both16(1)
@@ -344,7 +423,7 @@ def build_iso(limine_cd: bytes, config: bytes, kernel: bytes, initramfs: bytes, 
     path_be[10:22] = bytes((4, 0)) + struct.pack(">I", boot_directory_lba) + struct.pack(">H", 1) + b"BOOT"
 
     readme = (
-        "ProtoOS Live 0.1.2\r\n"
+        "ProtoOS Live 0.1.3\r\n"
         "UEFI x86_64 Linux live image.\r\n"
         "Secure Boot must be disabled for this development build.\r\n"
     ).encode("ascii")
@@ -356,7 +435,7 @@ def build_iso(limine_cd: bytes, config: bytes, kernel: bytes, initramfs: bytes, 
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     with destination.open("wb") as iso:
-        iso.write(b"\0" * (16 * SECTOR))
+        iso.write(system_area)
         iso.write(pvd)
         iso.write(boot_record)
         iso.write(terminator)
@@ -370,13 +449,21 @@ def build_iso(limine_cd: bytes, config: bytes, kernel: bytes, initramfs: bytes, 
         write_extent(iso, kernel)
         write_extent(iso, initramfs)
         write_extent(iso, readme)
+        iso.write(b"\0" * (gpt_tail_iso_sectors * SECTOR))
+        # The backup GPT metadata follows the final ISO file extents.
+        total_lba = volume_sectors * 4
+        backup_entries_lba = total_lba - 1 - len(backup_gpt_entries) // 512
+        iso.seek(backup_entries_lba * 512)
+        iso.write(backup_gpt_entries)
+        iso.seek((total_lba - 1) * 512)
+        iso.write(backup_gpt_header)
     if destination.stat().st_size != volume_sectors * SECTOR:
         fail("Internal ISO size check failed.")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-0.1.2-x86_64.iso")
+    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-0.1.3-x86_64.iso")
     args = parser.parse_args()
     try:
         kernel = obtain_kernel()

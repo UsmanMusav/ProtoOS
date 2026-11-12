@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import binascii
 import struct
 import sys
 from pathlib import Path
@@ -28,6 +29,40 @@ def read_extent(image: bytes, extent: int, size: int) -> bytes:
     if len(data) != size:
         fail(f"Truncated ISO extent at sector {extent}.")
     return data
+
+
+def check_gpt(image: bytes) -> tuple[int, int]:
+    """Validate the GPT ESP map used by Hyper-V UEFI and return its extent."""
+    if image[510:512] != b"\x55\xaa" or image[446 + 4] != 0xEE:
+        fail("ISO system area does not contain a protective MBR.")
+    header = image[512:1024]
+    if header[:8] != b"EFI PART" or struct.unpack_from("<I", header, 12)[0] != 92:
+        fail("ISO system area does not contain a valid primary GPT header.")
+    expected_crc = struct.unpack_from("<I", header, 16)[0]
+    crc_data = bytearray(header[:92])
+    struct.pack_into("<I", crc_data, 16, 0)
+    if binascii.crc32(crc_data) & 0xFFFFFFFF != expected_crc:
+        fail("Primary GPT header CRC is invalid.")
+    entries_lba = struct.unpack_from("<Q", header, 72)[0]
+    entry_count = struct.unpack_from("<I", header, 80)[0]
+    entry_size = struct.unpack_from("<I", header, 84)[0]
+    if entries_lba != 2 or entry_count != 128 or entry_size != 128:
+        fail("Unexpected primary GPT entry geometry.")
+    entries_size = entry_count * entry_size
+    entries = image[entries_lba * 512:entries_lba * 512 + entries_size]
+    if len(entries) != entries_size:
+        fail("Primary GPT partition entries are truncated.")
+    if binascii.crc32(entries) & 0xFFFFFFFF != struct.unpack_from("<I", header, 88)[0]:
+        fail("Primary GPT entry CRC is invalid.")
+    # EFI System Partition GUID, in GPT's mixed-endian byte order.
+    esp_guid = bytes.fromhex("28732ac11ff8d211ba4b00a0c93ec93b")
+    if entries[:16] != esp_guid:
+        fail("First GPT entry is not an EFI System Partition.")
+    first_lba = struct.unpack_from("<Q", entries, 32)[0]
+    last_lba = struct.unpack_from("<Q", entries, 40)[0]
+    if first_lba % 4 or last_lba < first_lba:
+        fail("EFI System Partition has an invalid ISO extent.")
+    return first_lba // 4, (last_lba - first_lba + 1) // 4
 
 
 def parse_directory(image: bytes, extent: int, size: int) -> dict[str, tuple[int, int, int]]:
@@ -66,6 +101,7 @@ def verify(path: Path) -> None:
     image = path.read_bytes()
     if len(image) % SECTOR:
         fail("ISO is not a whole number of 2048-byte sectors.")
+    gpt_efi_lba, gpt_efi_sectors = check_gpt(image)
     pvd = read_sector(image, 16)
     if pvd[:7] != b"\x01CD001\x01":
         fail("Primary Volume Descriptor is invalid.")
@@ -84,6 +120,8 @@ def verify(path: Path) -> None:
     section_lba = struct.unpack_from("<I", catalog, 104)[0]
     if initial_lba != section_lba:
         fail("UEFI El Torito entries point to different boot images.")
+    if initial_lba != gpt_efi_lba or gpt_efi_sectors * SECTOR < 2 * 1024 * 1024:
+        fail("GPT EFI System Partition does not map the El Torito UEFI CD image.")
     boot_image = read_extent(image, initial_lba, 64)
     if boot_image[:3] != b"\xeb\x3c\x90" or boot_image[54:62] != b"FAT12   ":
         fail("El Torito boot image is not Limine's FAT12 UEFI CD image.")
@@ -113,7 +151,7 @@ def verify(path: Path) -> None:
         fail("INITRD.IMG is not gzip-compressed.")
     print(f"OK: {path}")
     print(f"  size: {len(image) // 1024 // 1024} MiB")
-    print(f"  boot catalog: sector {catalog_lba}; UEFI CD image: sector {initial_lba}")
+    print(f"  boot catalog: sector {catalog_lba}; UEFI CD image/GPT ESP: sector {initial_lba}")
     print(f"  LIMINE.CONF: {len(config):,} bytes")
     print(f"  KERNEL.EFI: {len(kernel):,} bytes")
     print(f"  INITRD.IMG: {len(initrd):,} bytes")
