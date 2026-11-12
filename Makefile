@@ -1,7 +1,7 @@
 PYTHON ?= python3
 VERSION ?= 0.1.3
 ISO := dist/ProtoOS-$(VERSION)-x86_64.iso
-HYPERV_VHD := dist/ProtoOS-HyperV-0.2.1.vhd
+HYPERV_VHD := dist/ProtoOS-HyperV-0.2.2.vhd
 
 .PHONY: all iso check vhd check-vhd clean
 

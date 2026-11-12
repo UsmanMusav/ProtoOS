@@ -38,15 +38,17 @@ def obtain_limine_bootx64() -> Path:
 
 
 def limine_config() -> bytes:
-    return b"""timeout: 0
+    """Keep the menu visible and make early Linux diagnostics visible on UEFI GOP."""
+    return b"""timeout: no
 default_entry: 1
 verbose: yes
+graphics: no
 
-/ProtoOS Hyper-V Live 0.2.1
+/ProtoOS Hyper-V Live 0.2.2 (diagnostic)
     protocol: linux
     path: boot():/EFI/BOOT/KERNEL.EFI
     module_path: boot():/EFI/BOOT/INITRD.IMG
-    cmdline: console=tty0
+    cmdline: console=tty0 earlycon=efi,keep loglevel=7 ignore_loglevel
 """
 
 
@@ -312,7 +314,7 @@ def build_vhd(destination: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-HyperV-0.2.1.vhd")
+    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-HyperV-0.2.2.vhd")
     args = parser.parse_args()
     try:
         build_vhd(args.output)
