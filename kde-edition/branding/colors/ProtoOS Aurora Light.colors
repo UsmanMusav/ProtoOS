@@ -1,0 +1,32 @@
+[General]
+Name=ProtoOS Aurora Light
+ColorScheme=ProtoOS Aurora Light
+shadeSortColumn=true
+
+[Colors:Window]
+BackgroundNormal=247,249,255
+ForegroundNormal=31,38,62
+ForegroundInactive=98,109,141
+DecorationFocus=68,98,220
+DecorationHover=133,92,219
+
+[Colors:View]
+BackgroundNormal=255,255,255
+ForegroundNormal=31,38,62
+ForegroundInactive=98,109,141
+
+[Colors:Selection]
+BackgroundNormal=73,105,224
+ForegroundNormal=255,255,255
+
+[Colors:Button]
+BackgroundNormal=236,240,251
+ForegroundNormal=31,38,62
+
+[WM]
+activeBackground=240,244,255
+activeBlend=132,153,240
+activeForeground=30,38,67
+inactiveBackground=229,234,247
+inactiveBlend=198,206,231
+inactiveForeground=95,106,140

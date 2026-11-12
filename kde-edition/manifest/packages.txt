@@ -1,0 +1,39 @@
+# Debian packages for ProtoOS KDE Edition (first Hyper-V Live release).
+# Install these inside an amd64 Debian rootfs.
+
+# Boot/session
+systemd-sysv
+sddm
+plasma-desktop
+plasma-workspace
+plasma-workspace-x11
+plasma-nm
+plasma-pa
+powerdevil
+kde-config-sddm
+
+# Core desktop applications
+konsole
+dolphin
+ark
+kate
+okular
+systemsettings
+kdeplasma-addons
+
+# Visual/input integration
+xserver-xorg-core
+xserver-xorg-input-libinput
+xserver-xorg-video-fbdev
+x11-xserver-utils
+xauth
+fontconfig
+fonts-noto-core
+fonts-noto-color-emoji
+
+# Basic Live utilities
+network-manager
+sudo
+policykit-1
+dbus-user-session
+ca-certificates
