@@ -50,24 +50,6 @@ jobs:
           set -o pipefail
           sudo --preserve-env=PROTOOS_DEBIAN_RELEASE,PROTOOS_VIRTUAL_SIZE,PROTOOS_OUT_DIR,PROTOOS_WORK_DIR ./kde-edition/scripts/build-hyperv-vhd.sh 2>&1 | tee "${RUNNER_TEMP}/protoos-kde-build.log"
 
-      - name: Publish build diagnostics on failure
-        if: ${{ failure() }}
-        uses: actions/github-script@v7
-        env:
-          LOG_FILE: ${{ runner.temp }}/protoos-kde-build.log
-        with:
-          script: |
-            const fs = require('fs');
-            const log = fs.existsSync(process.env.LOG_FILE)
-              ? fs.readFileSync(process.env.LOG_FILE, 'utf8').split('\n').slice(-80).join('\n')
-              : 'The build log was not created.';
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: 1,
-              body: `KDE VHD build failed. Last log lines:\n\n\`\`\`text\n${log}\n\`\`\``
-            });
-
       - name: Publish VHD for Hyper-V testing
         uses: actions/upload-artifact@v4
         with:
@@ -84,9 +66,9 @@ jobs:
       - name: Compress VHD for GitHub Release
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
         run: |
-          set -euo pipefail
+          set -o pipefail
           VHD=release/ProtoOS-KDE-0.4.0-HyperV.vhd
-          xz --threads=0 --compress --keep --force --verbose "$VHD"
+          xz --threads=0 --compress --keep --force --verbose "$VHD" 2>&1 | tee "${RUNNER_TEMP}/protoos-kde-release.log"
           sha256sum "$VHD.xz" > "$VHD.xz.sha256"
 
       - name: Publish Preview release
@@ -104,3 +86,24 @@ jobs:
             release/ProtoOS-KDE-0.4.0-HyperV.vhd.xz \
             release/ProtoOS-KDE-0.4.0-HyperV.vhd.xz.sha256 \
             release/ProtoOS-KDE-0.4.0-HyperV.vhd.sha256
+
+      - name: Publish failure diagnostics
+        if: ${{ failure() }}
+        uses: actions/github-script@v7
+        env:
+          BUILD_LOG: ${{ runner.temp }}/protoos-kde-build.log
+          RELEASE_LOG: ${{ runner.temp }}/protoos-kde-release.log
+        with:
+          script: |
+            const fs = require('fs');
+            const paths = [process.env.BUILD_LOG, process.env.RELEASE_LOG];
+            const logs = paths.filter(fs.existsSync).map((path) =>
+              `=== ${path.split('/').pop()} ===\n` +
+              fs.readFileSync(path, 'utf8').split('\n').slice(-80).join('\n')
+            ).join('\n\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1,
+              body: `KDE VHD build or release failed. Last log lines:\n\n\`\`\`text\n${logs || 'No log was created.'}\n\`\`\``
+            });
