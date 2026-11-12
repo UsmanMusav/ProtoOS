@@ -145,21 +145,33 @@ HOME_URL="https://github.com/UsmanMusav/ProtoOS"
 SUPPORT_URL="https://github.com/UsmanMusav/ProtoOS/issues"
 OS_RELEASE
 
+# This configuration is embedded in the fallback BOOTX64.EFI below. Therefore
+# it runs even if an EFI GRUB executable has no usable prefix on first boot.
+cat > "$ROOTFS/tmp/protoos-efi-bootstrap.cfg" <<GRUB_BOOTSTRAP
+search --no-floppy --fs-uuid --set=root $ROOT_UUID
+set prefix=(\$root)/boot/grub
+configfile \$prefix/grub.cfg
+GRUB_BOOTSTRAP
+
 chroot "$ROOTFS" /bin/sh -eu -c '
     systemctl enable protoos-live-home.service
     systemctl set-default graphical.target
     grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ProtoOS --removable --no-nvram
     update-initramfs -u -k all
     update-grub
+    # Hyper-V boots the removable-media fallback path. Embed a minimal loader
+    # config so the executable does not depend on a prefix inferred in chroot.
+    grub-mkstandalone -O x86_64-efi \
+        -o /boot/efi/EFI/BOOT/BOOTX64.EFI \
+        --modules="part_gpt ext2 search search_fs_uuid configfile normal" \
+        "boot/grub/grub.cfg=/tmp/protoos-efi-bootstrap.cfg"
     apt-get clean
     rm -rf /var/lib/apt/lists/* /tmp/*
 '
 
-# Do not rely on a GRUB prefix inferred while building inside a chroot. The
-# fallback EFI executable is what Hyper-V starts, so provide it an explicit,
-# UUID-pinned route to the generated root-disk menu. Write both documented
-# fallback locations: GRUB can use EFI/BOOT when firmware starts BOOTX64.EFI,
-# or the bootloader-id directory when it retains that prefix.
+# Keep external fallback configuration as well as the embedded BOOTX64.EFI
+# bootstrap. These files are useful to firmware/GRUB variants that load an
+# external config first, while the standalone executable handles the rest.
 for efi_dir in "$ROOTFS/boot/efi/EFI/BOOT" "$ROOTFS/boot/efi/EFI/ProtoOS"; do
     install -d "$efi_dir"
     cat > "$efi_dir/grub.cfg" <<GRUB_EFI
@@ -172,6 +184,7 @@ done
 # Fail the build rather than publishing another VHD that can only reach a
 # `grub>` prompt because its EFI bootstrap configuration is absent.
 test -s "$ROOTFS/boot/grub/grub.cfg"
+test -s "$ROOTFS/boot/efi/EFI/BOOT/BOOTX64.EFI"
 for efi_config in "$ROOTFS/boot/efi/EFI/BOOT/grub.cfg" "$ROOTFS/boot/efi/EFI/ProtoOS/grub.cfg"; do
     test -s "$efi_config"
     grep -Fqx "search --no-floppy --fs-uuid --set=root $ROOT_UUID" "$efi_config"

@@ -78,13 +78,13 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: v0.4.0-kde-preview.2
+          RELEASE_TAG: v0.4.0-kde-preview.3
         run: |
           set -euo pipefail
           gh release create "$RELEASE_TAG" \
             --target "$GITHUB_SHA" \
-            --title "ProtoOS KDE Edition 0.4.0 Preview 2" \
-            --notes "Debian Trixie KDE Plasma Live preview for Hyper-V Generation 2. Preview 2 includes an explicit EFI GRUB bootstrap for Hyper-V. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
+            --title "ProtoOS KDE Edition 0.4.0 Preview 3" \
+            --notes "Debian Trixie KDE Plasma Live preview for Hyper-V Generation 2. Preview 3 embeds the GRUB bootstrap in BOOTX64.EFI for Hyper-V. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
             --prerelease \
             release/ProtoOS-KDE-0.4.0-HyperV.vhd.xz \
             release/ProtoOS-KDE-0.4.0-HyperV.vhd.xz.sha256 \
