@@ -42,7 +42,7 @@ def limine_config() -> bytes:
 default_entry: 1
 verbose: yes
 
-/ProtoOS Hyper-V Live 0.2.0
+/ProtoOS Hyper-V Live 0.2.1
     protocol: linux
     path: boot():/EFI/BOOT/KERNEL.EFI
     module_path: boot():/EFI/BOOT/INITRD.IMG
@@ -74,6 +74,35 @@ def fat_entry(name: str, attributes: int, cluster: int, size: int = 0) -> bytes:
     struct.pack_into("<H", entry, 20, cluster >> 16)
     struct.pack_into("<H", entry, 26, cluster & 0xFFFF)
     struct.pack_into("<I", entry, 28, size)
+    return bytes(entry)
+
+
+def fat_lfn_checksum(short: bytes) -> int:
+    """Return the VFAT checksum associated with an 11-byte short name."""
+    checksum = 0
+    for value in short:
+        checksum = (((checksum & 1) << 7) + (checksum >> 1) + value) & 0xFF
+    return checksum
+
+
+def fat_lfn_entry(name: str, short: bytes) -> bytes:
+    """Write the one VFAT long-name entry needed for limine.conf."""
+    units = list(name.encode("utf-16le"))
+    if len(units) % 2:
+        fail("Invalid UTF-16 FAT long filename.")
+    characters = [units[index] | (units[index + 1] << 8) for index in range(0, len(units), 2)]
+    characters.append(0)
+    if len(characters) > 13:
+        fail(f"FAT long filename is too long: {name}")
+    characters.extend([0xFFFF] * (13 - len(characters)))
+    entry = bytearray(32)
+    entry[0] = 0x41  # final entry + ordinal 1
+    entry[11] = 0x0F
+    entry[12] = 0
+    entry[13] = fat_lfn_checksum(short)
+    struct.pack_into("<H", entry, 26, 0)
+    for offset, character in zip((1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30), characters):
+        struct.pack_into("<H", entry, offset, character)
     return bytes(entry)
 
 
@@ -160,7 +189,16 @@ def fat16_esp(files: dict[str, bytes]) -> bytes:
     boot_directory[32:64] = fat_entry("..", 0x10, efi_cluster)
     offset = 64
     for path, content in files.items():
-        boot_directory[offset:offset + 32] = fat_entry(path.rsplit("/", 1)[-1], 0x20, file_clusters[path], len(content))
+        filename = path.rsplit("/", 1)[-1]
+        # Limine 8 uses its new configuration syntax only for limine.conf.
+        # FAT 8.3 cannot express the four-letter extension, so expose it with
+        # a VFAT long name and a conventional short-name alias.
+        short_filename = "LIMINE~1.CON" if filename == "LIMINE.CONF" else filename
+        short = short_name(short_filename)
+        if filename != short_filename:
+            boot_directory[offset:offset + 32] = fat_lfn_entry(filename, short)
+            offset += 32
+        boot_directory[offset:offset + 32] = fat_entry(short_filename, 0x20, file_clusters[path], len(content))
         offset += 32
     boot_offset = data_offset + (boot_cluster - 2) * cluster_bytes
     image[boot_offset:boot_offset + cluster_bytes] = boot_directory
@@ -222,7 +260,7 @@ def build_vhd(destination: Path) -> None:
     initrd = build_initramfs().read_bytes()
     esp = fat16_esp({
         "EFI/BOOT/BOOTX64.EFI": limine,
-        "EFI/BOOT/LIMINE.CFG": limine_config(),
+        "EFI/BOOT/LIMINE.CONF": limine_config(),
         "EFI/BOOT/KERNEL.EFI": kernel,
         "EFI/BOOT/INITRD.IMG": initrd,
     })
@@ -274,7 +312,7 @@ def build_vhd(destination: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-HyperV-0.2.0.vhd")
+    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-HyperV-0.2.1.vhd")
     args = parser.parse_args()
     try:
         build_vhd(args.output)

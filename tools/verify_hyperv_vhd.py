@@ -47,22 +47,36 @@ def read_fat16(image: bytes) -> dict[str, bytes]:
             cluster = next_cluster(cluster)
         return bytes(result[:size])
 
+    def long_name(entry: bytes) -> str:
+        units = [struct.unpack_from("<H", entry, position)[0]
+                 for position in (1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30)]
+        return "".join(chr(unit) for unit in units if unit not in (0, 0xFFFF))
+
     def directory(cluster: int, size: int | None) -> dict[str, tuple[int, int, int]]:
         raw = image[root_offset:root_offset + root_size] if cluster == 0 else chain(cluster, size or cluster_size)
         result: dict[str, tuple[int, int, int]] = {}
+        pending_long_name: str | None = None
         for offset in range(0, len(raw), 32):
             entry = raw[offset:offset + 32]
             if entry[0] == 0:
                 break
-            if entry[0] in (0xE5, 0x2E) or entry[11] == 0x0F:
+            if entry[0] == 0xE5:
+                pending_long_name = None
+                continue
+            if entry[11] == 0x0F:
+                pending_long_name = long_name(entry)
+                continue
+            if entry[0] == 0x2E:
+                pending_long_name = None
                 continue
             base = entry[:8].decode("ascii").rstrip()
             extension = entry[8:11].decode("ascii").rstrip()
-            name = base if not extension else f"{base}.{extension}"
+            name = pending_long_name or (base if not extension else f"{base}.{extension}")
+            pending_long_name = None
             attributes = entry[11]
             first = struct.unpack_from("<H", entry, 26)[0] | (struct.unpack_from("<H", entry, 20)[0] << 16)
             file_size = struct.unpack_from("<I", entry, 28)[0]
-            result[name] = (attributes, first, file_size)
+            result[name.upper()] = (attributes, first, file_size)
         return result
 
     root = directory(0, None)
@@ -73,7 +87,7 @@ def read_fat16(image: bytes) -> dict[str, bytes]:
         fail("ESP EFI directory is missing BOOT.")
     boot = directory(efi["BOOT"][1], efi["BOOT"][2])
     result: dict[str, bytes] = {}
-    for filename in ("BOOTX64.EFI", "LIMINE.CFG", "KERNEL.EFI", "INITRD.IMG"):
+    for filename in ("BOOTX64.EFI", "LIMINE.CONF", "KERNEL.EFI", "INITRD.IMG"):
         if filename not in boot:
             fail(f"ESP boot directory is missing {filename}.")
         _, cluster, size = boot[filename]
@@ -122,8 +136,8 @@ def verify(path: Path) -> None:
     files = read_fat16(esp)
     if not files["BOOTX64.EFI"].startswith(b"MZ"):
         fail("BOOTX64.EFI is not an EFI application.")
-    if b"protocol: linux" not in files["LIMINE.CFG"]:
-        fail("LIMINE.CFG does not define a Linux boot entry.")
+    if b"protocol: linux" not in files["LIMINE.CONF"]:
+        fail("LIMINE.CONF does not define a Linux boot entry.")
     if not files["KERNEL.EFI"].startswith(b"MZ"):
         fail("KERNEL.EFI is not an EFI-stub Linux kernel.")
     if not files["INITRD.IMG"].startswith(b"\x1f\x8b"):
