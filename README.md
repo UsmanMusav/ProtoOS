@@ -1,41 +1,44 @@
 # ProtoOS Live
 
-**ProtoOS** — учебная минимальная Live-система на Linux для `x86_64`. Версия **0.1.3** загружается в оперативную память, запускает BusyBox и даёт интерактивную консоль. На диск гостевой машины ничего не устанавливается.
+**ProtoOS** — учебная минимальная Live-система на Linux для `x86_64`. Она запускает BusyBox в памяти и даёт интерактивную консоль `ProtoOS#`. На диск гостевой машины ничего не устанавливается.
 
 > Это ранняя тестовая сборка, а не система для повседневного использования или хранения данных.
 
-## Важно: исправление Hyper-V в 0.1.3
+## Hyper-V: рекомендуемый образ 0.2.0 VHD
 
-Тесты образов 0.1.0–0.1.2 в Hyper-V завершались до запуска загрузчика сообщением **“The boot loader did not load an operating system”**. Проблема была в раннем ISO: у него не было GPT-разметки EFI System Partition, которую прошивка Hyper-V ожидает от UEFI boot image на оптическом носителе.
+Ранние ISO (`0.1.0`–`0.1.3`) предназначались для отладки UEFI CD boot и не проходят загрузку на использованной прошивке Hyper-V. Чтобы не зависеть от особенностей El Torito/оптического привода, для Hyper-V подготовлен отдельный образ:
 
-В 0.1.3 применена полная стандартная схема:
+```text
+ProtoOS-HyperV-0.2.0.vhd
+```
 
-- официальный `limine-uefi-cd.bin` — FAT12 El Torito UEFI CD image;
-- защитный MBR и GPT в System Area ISO;
-- GPT EFI System Partition указывает на тот же FAT12-образ, что и запись El Torito;
-- Limine читает `LIMINE.CONF`, ядро и initramfs непосредственно из ISO-9660.
+Это **fixed VHD** с нормальной GPT-разметкой и EFI System Partition. В ESP находятся:
 
-Используйте **только** `ProtoOS-0.1.3-x86_64.iso` для следующего теста.
+- `/EFI/BOOT/BOOTX64.EFI` — Limine 8.7.0;
+- `LIMINE.CFG` — конфигурация загрузки;
+- Linux EFI-stub kernel;
+- initramfs с BusyBox.
 
-## Что уже работает
+Hyper-V подключает VHD как обычный виртуальный диск, поэтому не нужен DVD boot prompt и не используется нестабильная загрузка с самодельного ISO.
 
-- загрузка через **UEFI** с ISO-образа;
-- Limine UEFI boot manager;
-- Linux-ядро с EFI stub;
-- initramfs в памяти: BusyBox, `/proc`, `/sys`, `/dev`;
-- консоль `ProtoOS#` и команды `help`, `sysinfo`, `uname -a`, `poweroff`;
-- сборка ISO одним вызовом `make iso` без GRUB, xorriso или mtools.
+## Запуск VHD в Hyper-V
 
-## Быстрый старт для тестера: Hyper-V
+1. Полностью **выключите** виртуальную машину.
+2. Откройте **Settings → SCSI Controller → Hard Drive**.
+3. Если там есть пустой старый VHDX, нажмите **Remove**.
+4. Нажмите **Add**, выберите **Hard Drive** и укажите файл `ProtoOS-HyperV-0.2.0.vhd`.
+5. Откройте **Settings → Firmware** и поставьте **Hard Drive** на первое место.
+6. В **Settings → Security** выключите **Enable Secure Boot**.
+7. ВМ должна быть **Generation 2**.
+8. Запустите ВМ.
 
-1. Возьмите файл `dist/ProtoOS-0.1.3-x86_64.iso` из готовой сборки.
-2. Полностью **выключите** старую виртуальную машину.
-3. В **SCSI Controller → DVD Drive** удалите старый ISO и подключите новый.
-4. ВМ должна быть **поколения 2** (Generation 2).
-5. В **Security** снимите флажок **Enable Secure Boot**.
-   - Образ пока не подписан Microsoft-ключом.
-6. В **Firmware** поставьте **DVD Drive** первым устройством загрузки.
-7. Запустите ВМ. Сначала кратко появится Limine, затем приглашение `ProtoOS#`.
+Для этого способа DVD и ISO не нужны. Можно отключить DVD Drive или извлечь из него ISO.
+
+Ожидаемый результат: появится Limine, затем экран ProtoOS и приглашение:
+
+```text
+ProtoOS#
+```
 
 Первые команды для проверки:
 
@@ -48,50 +51,50 @@ ls /
 poweroff
 ```
 
-## Сборка
+## ISO 0.1.3
 
-Требования на машине сборки:
+`ProtoOS-0.1.3-x86_64.iso` сохраняется как экспериментальный ISO-артефакт и проходит структурную проверку ISO-9660, El Torito, FAT12, MBR и GPT. Но для Hyper-V используйте VHD до тех пор, пока CD-загрузка не будет проверена на реальном Hyper-V.
+
+## Локальная сборка
+
+Требования:
 
 - Linux `x86_64`;
 - `python3` и `git`;
 - статический BusyBox по пути `/usr/bin/busybox`.
 
 ```sh
+make vhd
+make check-vhd
+```
+
+или для экспериментального ISO:
+
+```sh
 make iso
 make check
 ```
 
-Готовый ISO появится здесь:
+## Автоматическая проверка VHD
 
-```text
-dist/ProtoOS-0.1.3-x86_64.iso
-```
+`make check-vhd` проверяет:
 
-`make check` проверяет ISO-9660, начальную и section UEFI El Torito-записи, Limine FAT12 CD image, защитный MBR, CRC GPT и соответствие GPT ESP загрузочному образу.
+- формат fixed VHD и контрольную сумму footer;
+- защитный MBR;
+- primary GPT и CRC таблицы разделов;
+- EFI System Partition FAT16;
+- обязательные EFI, Limine, kernel и initramfs файлы.
 
 ## Проверяемые внешние компоненты
 
-Сборщик получает и сверяет SHA-256 двух зафиксированных бинарных входов:
+Сборщик получает и сверяет SHA-256 зафиксированных бинарных входов:
 
 | Компонент | Источник | Commit | SHA-256 |
 | --- | --- | --- | --- |
 | Linux EFI stub | [RedMoonnn/MicroLinux](https://github.com/RedMoonnn/MicroLinux) | `00a515d49c59f31c9c5e258928ac368012ac1ea6` | `dca8ba50d3ac9867073b54b7d694d019c9e048560102ddd4f9b2563df00686fd` |
-| Limine UEFI CD image | [limine-bootloader/limine](https://github.com/limine-bootloader/limine) | `aad3edd370955449717a334f0289dee10e2c5f01` | `0ea0aa408c464014a306840acc843dc564e54f602b2077852ceb34178488bd03` |
+| Limine EFI application | [limine-bootloader/limine](https://github.com/limine-bootloader/limine) | `aad3edd370955449717a334f0289dee10e2c5f01` | `51ca2b20ed14bbc678a396cdfb0c1d941acbc155cabebc9bfafabe4cdae1be73` |
 
-Это временное решение для быстрой тестовой сборки. Следующая важная задача проекта — воспроизводимая самостоятельная сборка и обновление ядра, затем подпись Secure Boot.
-
-## Что сообщать при ошибке
-
-Пожалуйста, укажите:
-
-1. версию Windows и Hyper-V;
-2. поколение ВМ и состояние Secure Boot;
-3. сколько памяти выделено;
-4. фото/текст последней строки на экране;
-5. видите ли экран Limine или kernel panic;
-6. появляется ли `ProtoOS#` и выполняется ли `sysinfo`.
-
-## Ограничения 0.1.3
+## Ограничения 0.2.0
 
 - только `x86_64 UEFI` и Hyper-V Generation 2;
 - только английская консоль и минимальный набор BusyBox;

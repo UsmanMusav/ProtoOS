@@ -3,6 +3,7 @@
 /dist/
 *.iso
 *.img
+*.vhd
 *.efi
 *.o
 *.so
