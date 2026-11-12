@@ -24,6 +24,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   build:
@@ -40,7 +41,27 @@ jobs:
           PROTOOS_VIRTUAL_SIZE: ${{ inputs.virtual_size }}
           PROTOOS_OUT_DIR: ${{ github.workspace }}/release
           PROTOOS_WORK_DIR: ${{ runner.temp }}/protoos-kde-work
-        run: sudo --preserve-env=PROTOOS_DEBIAN_RELEASE,PROTOOS_VIRTUAL_SIZE,PROTOOS_OUT_DIR,PROTOOS_WORK_DIR ./kde-edition/scripts/build-hyperv-vhd.sh
+        run: |
+          set -o pipefail
+          sudo --preserve-env=PROTOOS_DEBIAN_RELEASE,PROTOOS_VIRTUAL_SIZE,PROTOOS_OUT_DIR,PROTOOS_WORK_DIR ./kde-edition/scripts/build-hyperv-vhd.sh 2>&1 | tee "${RUNNER_TEMP}/protoos-kde-build.log"
+
+      - name: Publish build diagnostics on failure
+        if: ${{ failure() }}
+        uses: actions/github-script@v7
+        env:
+          LOG_FILE: ${{ runner.temp }}/protoos-kde-build.log
+        with:
+          script: |
+            const fs = require('fs');
+            const log = fs.existsSync(process.env.LOG_FILE)
+              ? fs.readFileSync(process.env.LOG_FILE, 'utf8').split('\n').slice(-80).join('\n')
+              : 'The build log was not created.';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1,
+              body: `KDE VHD build failed. Last log lines:\n\n\`\`\`text\n${log}\n\`\`\``
+            });
 
       - name: Publish VHD for Hyper-V testing
         uses: actions/upload-artifact@v4
