@@ -1,5 +1,5 @@
 PYTHON ?= python3
-VERSION ?= 0.1.0
+VERSION ?= 0.1.1
 ISO := dist/ProtoOS-$(VERSION)-x86_64.iso
 
 .PHONY: all iso check clean

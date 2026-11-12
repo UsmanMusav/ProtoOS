@@ -80,7 +80,7 @@ def parse_fat16(image: bytes) -> dict[str, bytes]:
         fail("FAT EFI directory does not contain BOOT.")
     boot = directory(efi["BOOT"][1], None)
     result: dict[str, bytes] = {}
-    for name in ("BOOTX64.EFI", "KERNEL.EFI", "INITRD.IMG"):
+    for name in ("BOOTX64.EFI", "LIMINE.CFG", "KERNEL.EFI", "INITRD.IMG"):
         if name not in boot:
             fail(f"FAT boot directory is missing {name}.")
         _, cluster, size = boot[name]
@@ -102,9 +102,9 @@ def verify(path: Path) -> None:
     catalog = read_sector(image, catalog_lba)
     if sum(struct.unpack("<16H", catalog[:32])) & 0xFFFF:
         fail("El Torito validation checksum is invalid.")
-    if catalog[64] != 0x91 or catalog[65] != 0xEF or catalog[96] != 0x88:
+    if catalog[1] != 0xEF or catalog[32] != 0x88 or catalog[33] != 0:
         fail("No bootable x86_64 UEFI El Torito entry was found.")
-    efi_lba = struct.unpack_from("<I", catalog, 104)[0]
+    efi_lba = struct.unpack_from("<I", catalog, 40)[0]
     efi_size = 16 * 1024 * 1024
     efi_image = image[efi_lba * SECTOR:efi_lba * SECTOR + efi_size]
     if len(efi_image) != efi_size:
@@ -112,6 +112,8 @@ def verify(path: Path) -> None:
     files = parse_fat16(efi_image)
     if not files["BOOTX64.EFI"].startswith(b"MZ"):
         fail("BOOTX64.EFI is not a PE image.")
+    if b"protocol: linux" not in files["LIMINE.CFG"]:
+        fail("LIMINE.CFG does not declare a Linux boot entry.")
     if not files["KERNEL.EFI"].startswith(b"MZ"):
         fail("KERNEL.EFI is not an EFI-stub Linux kernel.")
     if not files["INITRD.IMG"].startswith(b"\x1f\x8b"):

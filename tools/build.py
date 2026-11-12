@@ -6,7 +6,6 @@ import argparse
 import datetime as dt
 import gzip
 import hashlib
-import os
 import shutil
 import stat
 import struct
@@ -19,6 +18,9 @@ BUILD = ROOT / "build"
 KERNEL_REPOSITORY = "https://github.com/RedMoonnn/MicroLinux.git"
 KERNEL_COMMIT = "00a515d49c59f31c9c5e258928ac368012ac1ea6"
 KERNEL_SHA256 = "dca8ba50d3ac9867073b54b7d694d019c9e048560102ddd4f9b2563df00686fd"
+LIMINE_REPOSITORY = "https://github.com/limine-bootloader/limine.git"
+LIMINE_COMMIT = "aad3edd370955449717a334f0289dee10e2c5f01"  # Limine 8.7.0 binary release
+LIMINE_SHA256 = "51ca2b20ed14bbc678a396cdfb0c1d941acbc155cabebc9bfafabe4cdae1be73"
 EPOCH = 1794528000  # 2026-11-12 00:00:00 UTC, a stable ProtoOS build timestamp.
 SECTOR = 2048
 
@@ -38,12 +40,6 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def prepare_dir(path: Path) -> None:
-    if path.exists():
-        shutil.rmtree(path)
-    path.mkdir(parents=True)
 
 
 def obtain_kernel() -> Path:
@@ -67,29 +63,38 @@ def obtain_kernel() -> Path:
     return kernel
 
 
-def compile_loader() -> Path:
-    output = BUILD / "loader"
-    output.mkdir(parents=True, exist_ok=True)
-    source = ROOT / "boot" / "loader.c"
-    obj = output / "loader.o"
-    elf = output / "loader.so"
-    efi = output / "BOOTX64.EFI"
-    run([
-        "gcc", "-c", str(source), "-o", str(obj), "-std=c11", "-Os", "-Wall", "-Wextra",
-        "-ffreestanding", "-fno-stack-protector", "-fpic", "-mno-red-zone", "-mabi=ms",
-        "-maccumulate-outgoing-args",
-    ])
-    run([
-        "ld", "-nostdlib", "-znocombreloc", "-shared", "-Bsymbolic", "-e", "efi_main",
-        "-o", str(elf), str(obj),
-    ])
-    run([
-        "objcopy", "-O", "pei-x86-64", "--subsystem", "10", "--image-base", "0",
-        "--section-alignment", "0x1000", "--file-alignment", "0x200", str(elf), str(efi),
-    ])
-    if not efi.read_bytes().startswith(b"MZ"):
-        fail("The UEFI loader was not produced as a PE executable.")
-    return efi
+def obtain_limine() -> Path:
+    """Fetch a pinned, upstream Limine UEFI loader and verify it before use."""
+    source = BUILD / "vendor" / "limine"
+    loader = source / "BOOTX64.EFI"
+    if not loader.exists():
+        source.parent.mkdir(parents=True, exist_ok=True)
+        if source.exists():
+            shutil.rmtree(source)
+        run(["git", "clone", "--depth", "1", "--branch", "v8.x-binary", LIMINE_REPOSITORY, str(source)])
+        run(["git", "fetch", "--depth", "1", "origin", LIMINE_COMMIT], cwd=source)
+        run(["git", "checkout", "--detach", LIMINE_COMMIT], cwd=source)
+    actual = sha256(loader)
+    if actual != LIMINE_SHA256:
+        fail(
+            "The fetched Limine loader checksum does not match the pinned value. "
+            f"Expected {LIMINE_SHA256}, got {actual}. Remove build/vendor/limine and retry."
+        )
+    return loader
+
+
+def limine_config() -> bytes:
+    """Describe the Linux kernel and initramfs to the UEFI boot manager."""
+    return b"""timeout: 0
+default_entry: 1
+verbose: yes
+
+/ProtoOS Live 0.1.1
+    protocol: linux
+    path: boot():/EFI/BOOT/KERNEL.EFI
+    module_path: boot():/EFI/BOOT/INITRD.IMG
+    cmdline: console=tty0
+"""
 
 
 def pad4(buffer: bytearray) -> None:
@@ -133,7 +138,7 @@ export PATH=/bin
 /bin/mount -t sysfs sysfs /sys
 /bin/clear
 echo '================================================'
-echo '             ProtoOS Live 0.1.0'
+echo '             ProtoOS Live 0.1.1'
 echo '       Minimal Linux environment is ready'
 echo '================================================'
 echo ''
@@ -149,7 +154,7 @@ exec /bin/sh
   echo '  poweroff     Shut down the virtual machine'
 }
 sysinfo() {
-  echo 'ProtoOS Live 0.1.0'
+  echo 'ProtoOS Live 0.1.1'
   uname -a
   echo
   echo 'Memory:'
@@ -158,9 +163,9 @@ sysinfo() {
 export PS1='ProtoOS# '
 """
     os_release = b"""NAME=ProtoOS
-VERSION=0.1.0
+VERSION=0.1.1
 ID=protoos
-PRETTY_NAME=\"ProtoOS Live 0.1.0\"
+PRETTY_NAME=\"ProtoOS Live 0.1.1\"
 HOME_URL=\"https://github.com/UsmanMusav/ProtoOS\"
 """
     archive = bytearray()
@@ -347,9 +352,16 @@ def iso_directory_record(identifier: bytes, extent: int, size: int, flags: int) 
 
 
 def boot_catalog(efi_lba: int) -> bytes:
+    """Create a single-platform UEFI El Torito catalog.
+
+    Hyper-V's firmware reads the UEFI platform identifier from the validation
+    entry and boots the initial entry.  Keeping this as a single EFI catalog,
+    instead of a legacy default followed by an EFI extension section, avoids a
+    firmware-specific ambiguity observed in the first ProtoOS test image.
+    """
     catalog = bytearray(SECTOR)
     catalog[0] = 1  # validation entry
-    catalog[1] = 0  # x86 validation platform
+    catalog[1] = 0xEF  # EFI platform identifier
     catalog[4:4 + len(b"ProtoOS UEFI Live")] = b"ProtoOS UEFI Live"
     # The validation entry's 16-bit little-endian word sum must be zero.
     catalog[30] = 0x55
@@ -357,16 +369,10 @@ def boot_catalog(efi_lba: int) -> bytes:
     checksum = sum(struct.unpack("<16H", catalog[:32])) & 0xFFFF
     struct.pack_into("<H", catalog, 28, (-checksum) & 0xFFFF)
 
-    # A non-bootable legacy default entry followed by one final UEFI section.
-    catalog[32] = 0x00
-    catalog[64] = 0x91  # final section header
-    catalog[65] = 0xEF  # EFI platform identifier
-    struct.pack_into("<H", catalog, 66, 1)
-    catalog[68:68 + len(b"UEFI x86_64")] = b"UEFI x86_64"
-    catalog[96] = 0x88  # bootable section entry
-    catalog[97] = 0x00  # no emulation
-    struct.pack_into("<H", catalog, 102, 4)  # UEFI mounts the complete FAT image
-    struct.pack_into("<I", catalog, 104, efi_lba)
+    catalog[32] = 0x88  # bootable initial/default entry
+    catalog[33] = 0x00  # no emulation
+    struct.pack_into("<H", catalog, 38, 4)  # UEFI mounts the complete FAT image
+    struct.pack_into("<I", catalog, 40, efi_lba)
     return bytes(catalog)
 
 
@@ -387,7 +393,7 @@ def build_iso(efi_image: bytes, destination: Path) -> None:
     pvd[1:6] = b"CD001"
     pvd[6] = 1
     pvd[8:40] = b"PROTOOS".ljust(32, b" ")
-    pvd[40:72] = b"PROTOOS_LIVE_0_1_0".ljust(32, b" ")
+    pvd[40:72] = b"PROTOOS_LIVE_0_1_1".ljust(32, b" ")
     pvd[80:88] = both32(volume_sectors)
     pvd[120:124] = both16(1)
     pvd[124:128] = both16(1)
@@ -435,7 +441,7 @@ def build_iso(efi_image: bytes, destination: Path) -> None:
     path_le[:10] = bytes((1, 0)) + struct.pack("<I", root_lba) + struct.pack("<H", 1) + b"\0" + b"\0"
     path_be = bytearray(SECTOR)
     path_be[:10] = bytes((1, 0)) + struct.pack(">I", root_lba) + struct.pack(">H", 1) + b"\0" + b"\0"
-    readme = ("ProtoOS Live 0.1.0\r\n"
+    readme = ("ProtoOS Live 0.1.1\r\n"
               "UEFI x86_64 Linux live image.\r\n"
               "Secure Boot must be disabled for this development build.\r\n").encode("ascii")
 
@@ -463,14 +469,15 @@ def build_iso(efi_image: bytes, destination: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-0.1.0-x86_64.iso")
+    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-0.1.1-x86_64.iso")
     args = parser.parse_args()
     try:
         kernel = obtain_kernel()
-        loader = compile_loader()
+        limine = obtain_limine()
         initramfs = build_initramfs()
         efi = write_fat16({
-            "EFI/BOOT/BOOTX64.EFI": loader.read_bytes(),
+            "EFI/BOOT/BOOTX64.EFI": limine.read_bytes(),
+            "EFI/BOOT/LIMINE.CFG": limine_config(),
             "EFI/BOOT/KERNEL.EFI": kernel.read_bytes(),
             "EFI/BOOT/INITRD.IMG": initramfs.read_bytes(),
         })
