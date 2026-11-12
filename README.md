@@ -1,20 +1,20 @@
 # ProtoOS Live
 
-**ProtoOS** — учебная минимальная Live-система на Linux для `x86_64`. Версия **0.1.1** загружается в оперативную память, запускает BusyBox и даёт интерактивную консоль. На диск гостевой машины ничего не устанавливается.
+**ProtoOS** — учебная минимальная Live-система на Linux для `x86_64`. Версия **0.1.2** загружается в оперативную память, запускает BusyBox и даёт интерактивную консоль. На диск гостевой машины ничего не устанавливается.
 
 > Это ранняя тестовая сборка, а не система для повседневного использования или хранения данных.
 
-## Важно: исправление Hyper-V в 0.1.1
+## Важно: исправление Hyper-V в 0.1.2
 
-Тест ISO 0.1.0 в Hyper-V завершался сообщением **“The boot loader did not load an operating system”**. Причина была в экспериментальном собственном UEFI-загрузчике и неоднозначной структуре El Torito-каталога.
+Тесты образов 0.1.0 и 0.1.1 в Hyper-V завершались до запуска загрузчика сообщением **“The boot loader did not load an operating system”**. Это дефект раннего ISO: собственный FAT El Torito-образ не являлся тем форматом UEFI CD, который ожидает прошивка Hyper-V.
 
-В 0.1.1 используются:
+В 0.1.2 применена стандартная загрузочная цепочка Limine:
 
-- проверенный UEFI-загрузчик **Limine 8.7.0**;
-- одноплатформенный El Torito-каталог с идентификатором UEFI (`0xEF`), который корректно выбирает Hyper-V Generation 2;
-- конфигурация Limine для загрузки Linux-ядра и initramfs.
+- официальный `limine-uefi-cd.bin` — FAT12 El Torito UEFI CD image;
+- Limine 8.7.0 читает `LIMINE.CONF`, ядро и initramfs непосредственно из ISO-9660;
+- в каталоге El Torito есть и начальная UEFI-запись, и UEFI section entry для совместимости прошивок.
 
-Используйте только образ `ProtoOS-0.1.1-x86_64.iso` для повторного теста.
+Используйте **только** `ProtoOS-0.1.2-x86_64.iso` для следующего теста.
 
 ## Что уже работает
 
@@ -25,17 +25,15 @@
 - консоль `ProtoOS#` и команды `help`, `sysinfo`, `uname -a`, `poweroff`;
 - сборка ISO одним вызовом `make iso` без GRUB, xorriso или mtools.
 
-Образ создаётся Python-скриптом, который формирует FAT16 El Torito и ISO-9660 напрямую. Limine получает из своей конфигурации путь к ядру и initramfs, после чего запускает Linux.
-
 ## Быстрый старт для тестера: Hyper-V
 
-1. Возьмите файл `dist/ProtoOS-0.1.1-x86_64.iso` из готовой сборки или выполните сборку ниже.
-2. В **Диспетчере Hyper-V** создайте виртуальную машину **поколения 2** (Generation 2).
-3. Выделите от 512 МБ оперативной памяти; виртуальный диск не нужен.
-4. В разделе **SCSI Controller → DVD Drive** подключите ISO.
+1. Возьмите файл `dist/ProtoOS-0.1.2-x86_64.iso` из готовой сборки.
+2. Полностью **выключите** старую виртуальную машину.
+3. В **SCSI Controller → DVD Drive** удалите старый ISO и подключите новый.
+4. ВМ должна быть **поколения 2** (Generation 2).
 5. В **Security** снимите флажок **Enable Secure Boot**.
-   - Образ не подписан Microsoft-ключом: Secure Boot остановит экспериментальную сборку до запуска.
-6. В разделе **Firmware** поставьте **DVD Drive** первым устройством загрузки.
+   - Образ пока не подписан Microsoft-ключом.
+6. В **Firmware** поставьте **DVD Drive** первым устройством загрузки.
 7. Запустите ВМ. Сначала кратко появится Limine, затем приглашение `ProtoOS#`.
 
 Первые команды для проверки:
@@ -65,10 +63,10 @@ make check
 Готовый ISO появится здесь:
 
 ```text
-dist/ProtoOS-0.1.1-x86_64.iso
+dist/ProtoOS-0.1.2-x86_64.iso
 ```
 
-`make check` не запускает виртуальную машину, но проверяет ISO-9660, UEFI El Torito-элемент, FAT16, Limine-конфигурацию и наличие `BOOTX64.EFI`, `LIMINE.CFG`, `KERNEL.EFI`, `INITRD.IMG`.
+`make check` проверяет ISO-9660, начальную и section UEFI El Torito-записи, Limine FAT12 CD image, файлы `LIMINE.CONF`, `KERNEL.EFI` и `INITRD.IMG`.
 
 ## Проверяемые внешние компоненты
 
@@ -77,7 +75,7 @@ dist/ProtoOS-0.1.1-x86_64.iso
 | Компонент | Источник | Commit | SHA-256 |
 | --- | --- | --- | --- |
 | Linux EFI stub | [RedMoonnn/MicroLinux](https://github.com/RedMoonnn/MicroLinux) | `00a515d49c59f31c9c5e258928ac368012ac1ea6` | `dca8ba50d3ac9867073b54b7d694d019c9e048560102ddd4f9b2563df00686fd` |
-| Limine UEFI | [limine-bootloader/limine](https://github.com/limine-bootloader/limine) | `aad3edd370955449717a334f0289dee10e2c5f01` | `51ca2b20ed14bbc678a396cdfb0c1d941acbc155cabebc9bfafabe4cdae1be73` |
+| Limine UEFI CD image | [limine-bootloader/limine](https://github.com/limine-bootloader/limine) | `aad3edd370955449717a334f0289dee10e2c5f01` | `0ea0aa408c464014a306840acc843dc564e54f602b2077852ceb34178488bd03` |
 
 Это временное решение для быстрой тестовой сборки. Следующая важная задача проекта — воспроизводимая самостоятельная сборка и обновление ядра, затем подпись Secure Boot.
 
@@ -92,7 +90,7 @@ dist/ProtoOS-0.1.1-x86_64.iso
 5. видите ли экран Limine или kernel panic;
 6. появляется ли `ProtoOS#` и выполняется ли `sysinfo`.
 
-## Ограничения 0.1.1
+## Ограничения 0.1.2
 
 - только `x86_64 UEFI` и Hyper-V Generation 2;
 - только английская консоль и минимальный набор BusyBox;

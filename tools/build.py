@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the ProtoOS Live UEFI ISO without external ISO/bootloader utilities."""
+"""Build the ProtoOS Live UEFI ISO without external ISO authoring tools."""
 from __future__ import annotations
 
 import argparse
@@ -20,7 +20,7 @@ KERNEL_COMMIT = "00a515d49c59f31c9c5e258928ac368012ac1ea6"
 KERNEL_SHA256 = "dca8ba50d3ac9867073b54b7d694d019c9e048560102ddd4f9b2563df00686fd"
 LIMINE_REPOSITORY = "https://github.com/limine-bootloader/limine.git"
 LIMINE_COMMIT = "aad3edd370955449717a334f0289dee10e2c5f01"  # Limine 8.7.0 binary release
-LIMINE_SHA256 = "51ca2b20ed14bbc678a396cdfb0c1d941acbc155cabebc9bfafabe4cdae1be73"
+LIMINE_UEFI_CD_SHA256 = "0ea0aa408c464014a306840acc843dc564e54f602b2077852ceb34178488bd03"
 EPOCH = 1794528000  # 2026-11-12 00:00:00 UTC, a stable ProtoOS build timestamp.
 SECTOR = 2048
 
@@ -42,59 +42,37 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def obtain_pinned_file(repository: str, branch: str, commit: str, filename: str, expected_sha256: str, cache_name: str) -> Path:
+    """Clone one fixed upstream revision and validate the file used in the ISO."""
+    source = BUILD / "vendor" / cache_name
+    result = source / filename
+    if not result.exists():
+        source.parent.mkdir(parents=True, exist_ok=True)
+        if source.exists():
+            shutil.rmtree(source)
+        run(["git", "clone", "--depth", "1", "--branch", branch, repository, str(source)])
+        run(["git", "fetch", "--depth", "1", "origin", commit], cwd=source)
+        run(["git", "checkout", "--detach", commit], cwd=source)
+    actual = sha256(result)
+    if actual != expected_sha256:
+        fail(
+            f"The checksum of {filename} does not match its pinned value. "
+            f"Expected {expected_sha256}, got {actual}. Remove {source} and retry."
+        )
+    return result
+
+
 def obtain_kernel() -> Path:
-    """Fetch one pinned Linux EFI-stub binary and verify it before use."""
-    source = BUILD / "vendor" / "micro-linux"
-    kernel = source / "bzImage"
-    if not kernel.exists():
-        source.parent.mkdir(parents=True, exist_ok=True)
-        if source.exists():
-            shutil.rmtree(source)
-        # A shallow checkout at a full commit makes the input deterministic.
-        run(["git", "clone", "--depth", "1", KERNEL_REPOSITORY, str(source)])
-        run(["git", "fetch", "--depth", "1", "origin", KERNEL_COMMIT], cwd=source)
-        run(["git", "checkout", "--detach", KERNEL_COMMIT], cwd=source)
-    actual = sha256(kernel)
-    if actual != KERNEL_SHA256:
-        fail(
-            "The fetched Linux kernel checksum does not match the pinned value. "
-            f"Expected {KERNEL_SHA256}, got {actual}. Remove build/vendor/micro-linux and retry."
-        )
-    return kernel
+    return obtain_pinned_file(
+        KERNEL_REPOSITORY, "main", KERNEL_COMMIT, "bzImage", KERNEL_SHA256, "micro-linux"
+    )
 
 
-def obtain_limine() -> Path:
-    """Fetch a pinned, upstream Limine UEFI loader and verify it before use."""
-    source = BUILD / "vendor" / "limine"
-    loader = source / "BOOTX64.EFI"
-    if not loader.exists():
-        source.parent.mkdir(parents=True, exist_ok=True)
-        if source.exists():
-            shutil.rmtree(source)
-        run(["git", "clone", "--depth", "1", "--branch", "v8.x-binary", LIMINE_REPOSITORY, str(source)])
-        run(["git", "fetch", "--depth", "1", "origin", LIMINE_COMMIT], cwd=source)
-        run(["git", "checkout", "--detach", LIMINE_COMMIT], cwd=source)
-    actual = sha256(loader)
-    if actual != LIMINE_SHA256:
-        fail(
-            "The fetched Limine loader checksum does not match the pinned value. "
-            f"Expected {LIMINE_SHA256}, got {actual}. Remove build/vendor/limine and retry."
-        )
-    return loader
-
-
-def limine_config() -> bytes:
-    """Describe the Linux kernel and initramfs to the UEFI boot manager."""
-    return b"""timeout: 0
-default_entry: 1
-verbose: yes
-
-/ProtoOS Live 0.1.1
-    protocol: linux
-    path: boot():/EFI/BOOT/KERNEL.EFI
-    module_path: boot():/EFI/BOOT/INITRD.IMG
-    cmdline: console=tty0
-"""
+def obtain_limine_uefi_cd() -> Path:
+    return obtain_pinned_file(
+        LIMINE_REPOSITORY, "v8.x-binary", LIMINE_COMMIT, "limine-uefi-cd.bin",
+        LIMINE_UEFI_CD_SHA256, "limine"
+    )
 
 
 def pad4(buffer: bytearray) -> None:
@@ -138,7 +116,7 @@ export PATH=/bin
 /bin/mount -t sysfs sysfs /sys
 /bin/clear
 echo '================================================'
-echo '             ProtoOS Live 0.1.1'
+echo '             ProtoOS Live 0.1.2'
 echo '       Minimal Linux environment is ready'
 echo '================================================'
 echo ''
@@ -154,7 +132,7 @@ exec /bin/sh
   echo '  poweroff     Shut down the virtual machine'
 }
 sysinfo() {
-  echo 'ProtoOS Live 0.1.1'
+  echo 'ProtoOS Live 0.1.2'
   uname -a
   echo
   echo 'Memory:'
@@ -163,9 +141,9 @@ sysinfo() {
 export PS1='ProtoOS# '
 """
     os_release = b"""NAME=ProtoOS
-VERSION=0.1.1
+VERSION=0.1.2
 ID=protoos
-PRETTY_NAME=\"ProtoOS Live 0.1.1\"
+PRETTY_NAME=\"ProtoOS Live 0.1.2\"
 HOME_URL=\"https://github.com/UsmanMusav/ProtoOS\"
 """
     archive = bytearray()
@@ -195,135 +173,18 @@ HOME_URL=\"https://github.com/UsmanMusav/ProtoOS\"
     return output
 
 
-def short_name(name: str) -> bytes:
-    """Return a strict 8.3 uppercase FAT directory name."""
-    if "." in name:
-        base, extension = name.rsplit(".", 1)
-    else:
-        base, extension = name, ""
-    encoded = (base.upper().encode("ascii")[:8].ljust(8, b" ") +
-               extension.upper().encode("ascii")[:3].ljust(3, b" "))
-    if any(byte < 32 for byte in encoded):
-        fail(f"Invalid FAT name: {name}")
-    return encoded
+def limine_config() -> bytes:
+    """Describe the root ISO-9660 files to Limine's Linux protocol implementation."""
+    return b"""timeout: 0
+default_entry: 1
+verbose: yes
 
-
-def fat_dir_entry(name: str, attributes: int, first_cluster: int, size: int = 0) -> bytes:
-    entry = bytearray(32)
-    if name == ".":
-        entry[0] = 0x2E
-        entry[1:11] = b" " * 10
-    elif name == "..":
-        entry[0:2] = b".."
-        entry[2:11] = b" " * 9
-    else:
-        entry[:11] = short_name(name)
-    entry[11] = attributes
-    struct.pack_into("<H", entry, 20, (first_cluster >> 16) & 0xFFFF)
-    struct.pack_into("<H", entry, 26, first_cluster & 0xFFFF)
-    struct.pack_into("<I", entry, 28, size)
-    return bytes(entry)
-
-
-def write_fat16(files: dict[str, bytes]) -> bytes:
-    """Make a small FAT16 image suitable for an El Torito UEFI boot entry."""
-    bytes_per_sector = 512
-    sectors_per_cluster = 4
-    reserved_sectors = 1
-    fat_count = 2
-    root_entries = 512
-    root_sectors = (root_entries * 32 + bytes_per_sector - 1) // bytes_per_sector
-    total_sectors = 32768  # 16 MiB
-
-    fat_sectors = 1
-    while True:
-        data_sectors = total_sectors - reserved_sectors - fat_count * fat_sectors - root_sectors
-        clusters = data_sectors // sectors_per_cluster
-        needed = ((clusters + 2) * 2 + bytes_per_sector - 1) // bytes_per_sector
-        if needed == fat_sectors:
-            break
-        fat_sectors = needed
-    if not 4085 <= clusters < 65525:
-        fail("FAT image geometry did not result in FAT16.")
-
-    image = bytearray(total_sectors * bytes_per_sector)
-    boot = memoryview(image)[:bytes_per_sector]
-    boot[:3] = b"\xeb\x3c\x90"
-    boot[3:11] = b"PROTOOS "
-    struct.pack_into("<H", boot, 11, bytes_per_sector)
-    boot[13] = sectors_per_cluster
-    struct.pack_into("<H", boot, 14, reserved_sectors)
-    boot[16] = fat_count
-    struct.pack_into("<H", boot, 17, root_entries)
-    struct.pack_into("<H", boot, 19, total_sectors)
-    boot[21] = 0xF8
-    struct.pack_into("<H", boot, 22, fat_sectors)
-    struct.pack_into("<H", boot, 24, 32)
-    struct.pack_into("<H", boot, 26, 64)
-    struct.pack_into("<I", boot, 28, 0)
-    struct.pack_into("<I", boot, 32, 0)
-    boot[36] = 0x80
-    boot[38] = 0x29
-    struct.pack_into("<I", boot, 39, 0x50524F54)
-    boot[43:54] = b"PROTOOS EFI"
-    boot[54:62] = b"FAT16   "
-    boot[510:512] = b"\x55\xaa"
-
-    fat_offset = reserved_sectors * bytes_per_sector
-    root_offset = (reserved_sectors + fat_count * fat_sectors) * bytes_per_sector
-    data_offset = (reserved_sectors + fat_count * fat_sectors + root_sectors) * bytes_per_sector
-    cluster_bytes = sectors_per_cluster * bytes_per_sector
-    fat = bytearray(fat_sectors * bytes_per_sector)
-    struct.pack_into("<H", fat, 0, 0xFFF8)
-    struct.pack_into("<H", fat, 2, 0xFFFF)
-    next_cluster = 2
-
-    def allocate(data: bytes) -> int:
-        nonlocal next_cluster
-        count = max(1, (len(data) + cluster_bytes - 1) // cluster_bytes)
-        start = next_cluster
-        if start + count > clusters + 2:
-            fail("The EFI boot image is too large.")
-        for index in range(count):
-            current = start + index
-            following = 0xFFFF if index + 1 == count else current + 1
-            struct.pack_into("<H", fat, current * 2, following)
-            begin = data_offset + (current - 2) * cluster_bytes
-            piece = data[index * cluster_bytes:(index + 1) * cluster_bytes]
-            image[begin:begin + len(piece)] = piece
-        next_cluster += count
-        return start
-
-    efi_cluster = allocate(b"\0" * cluster_bytes)
-    boot_cluster = allocate(b"\0" * cluster_bytes)
-    file_clusters: dict[str, int] = {}
-    for path, content in files.items():
-        file_clusters[path] = allocate(content)
-
-    image[root_offset:root_offset + 32] = fat_dir_entry("EFI", 0x10, efi_cluster)
-
-    efi_directory = bytearray(cluster_bytes)
-    efi_directory[0:32] = fat_dir_entry(".", 0x10, efi_cluster)
-    efi_directory[32:64] = fat_dir_entry("..", 0x10, 0)
-    efi_directory[64:96] = fat_dir_entry("BOOT", 0x10, boot_cluster)
-    efi_start = data_offset + (efi_cluster - 2) * cluster_bytes
-    image[efi_start:efi_start + cluster_bytes] = efi_directory
-
-    boot_directory = bytearray(cluster_bytes)
-    boot_directory[0:32] = fat_dir_entry(".", 0x10, boot_cluster)
-    boot_directory[32:64] = fat_dir_entry("..", 0x10, efi_cluster)
-    offset = 64
-    for path, content in files.items():
-        filename = path.rsplit("/", 1)[-1]
-        boot_directory[offset:offset + 32] = fat_dir_entry(filename, 0x20, file_clusters[path], len(content))
-        offset += 32
-    boot_start = data_offset + (boot_cluster - 2) * cluster_bytes
-    image[boot_start:boot_start + cluster_bytes] = boot_directory
-
-    for copy in range(fat_count):
-        start = fat_offset + copy * len(fat)
-        image[start:start + len(fat)] = fat
-    return bytes(image)
+/ProtoOS Live 0.1.2
+    protocol: linux
+    path: boot():/KERNEL.EFI
+    module_path: boot():/INITRD.IMG
+    cmdline: console=tty0
+"""
 
 
 def both16(value: int) -> bytes:
@@ -348,22 +209,32 @@ def iso_record_datetime() -> bytes:
 def iso_directory_record(identifier: bytes, extent: int, size: int, flags: int) -> bytes:
     padding = b"\0" if len(identifier) % 2 == 0 else b""
     length = 33 + len(identifier) + len(padding)
-    return bytes((length, 0)) + both32(extent) + both32(size) + iso_record_datetime() + bytes((flags, 0, 0)) + both16(1) + bytes((len(identifier),)) + identifier + padding
+    return (
+        bytes((length, 0)) + both32(extent) + both32(size) + iso_record_datetime()
+        + bytes((flags, 0, 0)) + both16(1) + bytes((len(identifier),)) + identifier + padding
+    )
+
+
+def sector_count(content: bytes) -> int:
+    return (len(content) + SECTOR - 1) // SECTOR
+
+
+def write_extent(stream, content: bytes) -> None:
+    stream.write(content)
+    stream.write(b"\0" * ((-len(content)) % SECTOR))
 
 
 def boot_catalog(efi_lba: int) -> bytes:
-    """Create a single-platform UEFI El Torito catalog.
+    """Create a UEFI El Torito catalog accepted by Hyper-V firmware.
 
-    Hyper-V's firmware reads the UEFI platform identifier from the validation
-    entry and boots the initial entry.  Keeping this as a single EFI catalog,
-    instead of a legacy default followed by an EFI extension section, avoids a
-    firmware-specific ambiguity observed in the first ProtoOS test image.
+    The initial entry is a UEFI entry and is mirrored in an EFI section entry.
+    This supports both firmware implementations that use the validation/initial
+    pair and implementations that scan the extension sections.
     """
     catalog = bytearray(SECTOR)
     catalog[0] = 1  # validation entry
     catalog[1] = 0xEF  # EFI platform identifier
     catalog[4:4 + len(b"ProtoOS UEFI Live")] = b"ProtoOS UEFI Live"
-    # The validation entry's 16-bit little-endian word sum must be zero.
     catalog[30] = 0x55
     catalog[31] = 0xAA
     checksum = sum(struct.unpack("<16H", catalog[:32])) & 0xFFFF
@@ -371,34 +242,47 @@ def boot_catalog(efi_lba: int) -> bytes:
 
     catalog[32] = 0x88  # bootable initial/default entry
     catalog[33] = 0x00  # no emulation
-    struct.pack_into("<H", catalog, 38, 4)  # UEFI mounts the complete FAT image
+    struct.pack_into("<H", catalog, 38, 4)
     struct.pack_into("<I", catalog, 40, efi_lba)
+
+    catalog[64] = 0x91  # final section header
+    catalog[65] = 0xEF  # EFI platform identifier
+    struct.pack_into("<H", catalog, 66, 1)
+    catalog[68:68 + len(b"UEFI x86_64")] = b"UEFI x86_64"
+    catalog[96] = 0x88  # bootable section entry
+    catalog[97] = 0x00  # no emulation
+    struct.pack_into("<H", catalog, 102, 4)
+    struct.pack_into("<I", catalog, 104, efi_lba)
     return bytes(catalog)
 
 
-def build_iso(efi_image: bytes, destination: Path) -> None:
+def build_iso(limine_cd: bytes, config: bytes, kernel: bytes, initramfs: bytes, destination: Path) -> None:
+    """Write a UEFI ISO-9660 image with Limine's official FAT12 CD boot image."""
     root_lba = 19
     catalog_lba = 20
     path_le_lba = 21
     path_be_lba = 22
-    efi_lba = 23
-    efi_sectors = len(efi_image) // SECTOR
-    if len(efi_image) % SECTOR:
-        fail("EFI image must be ISO-sector aligned.")
-    readme_lba = efi_lba + efi_sectors
+    boot_directory_lba = 23
+    limine_cd_lba = 24
+    config_lba = limine_cd_lba + sector_count(limine_cd)
+    kernel_lba = config_lba + sector_count(config)
+    initramfs_lba = kernel_lba + sector_count(kernel)
+    readme_lba = initramfs_lba + sector_count(initramfs)
     volume_sectors = readme_lba + 1
 
+    # Two ISO path-table records: root (10 bytes) and BOOT (12 bytes).
+    path_table_size = 22
     pvd = bytearray(SECTOR)
     pvd[0] = 1
     pvd[1:6] = b"CD001"
     pvd[6] = 1
     pvd[8:40] = b"PROTOOS".ljust(32, b" ")
-    pvd[40:72] = b"PROTOOS_LIVE_0_1_1".ljust(32, b" ")
+    pvd[40:72] = b"PROTOOS_LIVE_0_1_2".ljust(32, b" ")
     pvd[80:88] = both32(volume_sectors)
     pvd[120:124] = both16(1)
     pvd[124:128] = both16(1)
     pvd[128:132] = both16(SECTOR)
-    pvd[132:140] = both32(10)
+    pvd[132:140] = both32(path_table_size)
     struct.pack_into("<I", pvd, 140, path_le_lba)
     struct.pack_into("<I", pvd, 144, 0)
     struct.pack_into(">I", pvd, 148, path_be_lba)
@@ -427,27 +311,46 @@ def build_iso(efi_image: bytes, destination: Path) -> None:
     terminator[6] = 1
 
     root_directory = bytearray(SECTOR)
-    records = [
+    root_records = (
         iso_directory_record(b"\0", root_lba, SECTOR, 2),
         iso_directory_record(b"\1", root_lba, SECTOR, 2),
+        iso_directory_record(b"BOOT", boot_directory_lba, SECTOR, 2),
+        iso_directory_record(b"LIMINE.CONF;1", config_lba, len(config), 0),
+        iso_directory_record(b"KERNEL.EFI;1", kernel_lba, len(kernel), 0),
+        iso_directory_record(b"INITRD.IMG;1", initramfs_lba, len(initramfs), 0),
         iso_directory_record(b"README.TXT;1", readme_lba, SECTOR, 0),
-    ]
+    )
     cursor = 0
-    for record in records:
+    for record in root_records:
         root_directory[cursor:cursor + len(record)] = record
         cursor += len(record)
 
-    path_le = bytearray(SECTOR)
-    path_le[:10] = bytes((1, 0)) + struct.pack("<I", root_lba) + struct.pack("<H", 1) + b"\0" + b"\0"
-    path_be = bytearray(SECTOR)
-    path_be[:10] = bytes((1, 0)) + struct.pack(">I", root_lba) + struct.pack(">H", 1) + b"\0" + b"\0"
-    readme = ("ProtoOS Live 0.1.1\r\n"
-              "UEFI x86_64 Linux live image.\r\n"
-              "Secure Boot must be disabled for this development build.\r\n").encode("ascii")
+    boot_directory = bytearray(SECTOR)
+    boot_records = (
+        iso_directory_record(b"\0", boot_directory_lba, SECTOR, 2),
+        iso_directory_record(b"\1", root_lba, SECTOR, 2),
+        iso_directory_record(b"LIMINE-UEFI-CD.BIN;1", limine_cd_lba, len(limine_cd), 0),
+    )
+    cursor = 0
+    for record in boot_records:
+        boot_directory[cursor:cursor + len(record)] = record
+        cursor += len(record)
 
+    path_le = bytearray(SECTOR)
+    path_le[0:10] = bytes((1, 0)) + struct.pack("<I", root_lba) + struct.pack("<H", 1) + b"\0\0"
+    path_le[10:22] = bytes((4, 0)) + struct.pack("<I", boot_directory_lba) + struct.pack("<H", 1) + b"BOOT"
+    path_be = bytearray(SECTOR)
+    path_be[0:10] = bytes((1, 0)) + struct.pack(">I", root_lba) + struct.pack(">H", 1) + b"\0\0"
+    path_be[10:22] = bytes((4, 0)) + struct.pack(">I", boot_directory_lba) + struct.pack(">H", 1) + b"BOOT"
+
+    readme = (
+        "ProtoOS Live 0.1.2\r\n"
+        "UEFI x86_64 Linux live image.\r\n"
+        "Secure Boot must be disabled for this development build.\r\n"
+    ).encode("ascii")
     for label, buffer in (("PVD", pvd), ("boot record", boot_record), ("terminator", terminator),
-                          ("root directory", root_directory), ("path table LE", path_le),
-                          ("path table BE", path_be)):
+                          ("root directory", root_directory), ("boot directory", boot_directory),
+                          ("path table LE", path_le), ("path table BE", path_be)):
         if len(buffer) != SECTOR:
             fail(f"Internal {label} length is {len(buffer)}, expected {SECTOR}.")
 
@@ -458,30 +361,28 @@ def build_iso(efi_image: bytes, destination: Path) -> None:
         iso.write(boot_record)
         iso.write(terminator)
         iso.write(root_directory)
-        iso.write(boot_catalog(efi_lba))
+        iso.write(boot_catalog(limine_cd_lba))
         iso.write(path_le)
         iso.write(path_be)
-        iso.write(efi_image)
-        iso.write(readme.ljust(SECTOR, b"\0"))
+        iso.write(boot_directory)
+        write_extent(iso, limine_cd)
+        write_extent(iso, config)
+        write_extent(iso, kernel)
+        write_extent(iso, initramfs)
+        write_extent(iso, readme)
     if destination.stat().st_size != volume_sectors * SECTOR:
         fail("Internal ISO size check failed.")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-0.1.1-x86_64.iso")
+    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "ProtoOS-0.1.2-x86_64.iso")
     args = parser.parse_args()
     try:
         kernel = obtain_kernel()
-        limine = obtain_limine()
+        limine_cd = obtain_limine_uefi_cd()
         initramfs = build_initramfs()
-        efi = write_fat16({
-            "EFI/BOOT/BOOTX64.EFI": limine.read_bytes(),
-            "EFI/BOOT/LIMINE.CFG": limine_config(),
-            "EFI/BOOT/KERNEL.EFI": kernel.read_bytes(),
-            "EFI/BOOT/INITRD.IMG": initramfs.read_bytes(),
-        })
-        build_iso(efi, args.output)
+        build_iso(limine_cd.read_bytes(), limine_config(), kernel.read_bytes(), initramfs.read_bytes(), args.output)
         print(f"Built {args.output} ({args.output.stat().st_size / 1024 / 1024:.1f} MiB)")
         print(f"SHA256 {sha256(args.output)}")
     except (OSError, subprocess.CalledProcessError, RuntimeError) as error:

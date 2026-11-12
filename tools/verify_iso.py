@@ -22,70 +22,44 @@ def read_sector(image: bytes, number: int) -> bytes:
     return sector
 
 
-def parse_fat16(image: bytes) -> dict[str, bytes]:
-    if image[54:62] != b"FAT16   " or image[510:512] != b"\x55\xaa":
-        fail("El Torito image is not a FAT16 volume.")
-    sector_size = struct.unpack_from("<H", image, 11)[0]
-    sectors_per_cluster = image[13]
-    reserved = struct.unpack_from("<H", image, 14)[0]
-    fats = image[16]
-    root_entries = struct.unpack_from("<H", image, 17)[0]
-    fat_sectors = struct.unpack_from("<H", image, 22)[0]
-    if sector_size != 512 or not sectors_per_cluster or fats != 2:
-        fail("Unexpected FAT16 geometry.")
-    root_offset = (reserved + fats * fat_sectors) * sector_size
-    root_size = root_entries * 32
-    data_offset = root_offset + root_size
-    cluster_size = sector_size * sectors_per_cluster
-    fat_offset = reserved * sector_size
+def read_extent(image: bytes, extent: int, size: int) -> bytes:
+    begin = extent * SECTOR
+    data = image[begin:begin + size]
+    if len(data) != size:
+        fail(f"Truncated ISO extent at sector {extent}.")
+    return data
 
-    def next_cluster(cluster: int) -> int:
-        return struct.unpack_from("<H", image, fat_offset + cluster * 2)[0]
 
-    def read_cluster_chain(cluster: int, size: int) -> bytes:
-        result = bytearray()
-        seen: set[int] = set()
-        while 2 <= cluster < 0xFFF8:
-            if cluster in seen:
-                fail("A FAT chain loops.")
-            seen.add(cluster)
-            begin = data_offset + (cluster - 2) * cluster_size
-            result.extend(image[begin:begin + cluster_size])
-            cluster = next_cluster(cluster)
-        return bytes(result[:size])
-
-    def directory(cluster: int, size: int | None) -> dict[str, tuple[int, int, int]]:
-        raw = image[root_offset:root_offset + root_size] if cluster == 0 else read_cluster_chain(cluster, size or cluster_size)
-        entries: dict[str, tuple[int, int, int]] = {}
-        for position in range(0, len(raw), 32):
-            entry = raw[position:position + 32]
-            if not entry or entry[0] == 0:
-                break
-            if entry[0] == 0xE5 or entry[11] == 0x0F:
-                continue
-            name = entry[:8].decode("ascii").rstrip()
-            extension = entry[8:11].decode("ascii").rstrip()
-            label = name if not extension else f"{name}.{extension}"
-            attributes = entry[11]
-            first = struct.unpack_from("<H", entry, 26)[0] | (struct.unpack_from("<H", entry, 20)[0] << 16)
-            file_size = struct.unpack_from("<I", entry, 28)[0]
-            entries[label] = (attributes, first, file_size)
-        return entries
-
-    root = directory(0, None)
-    if "EFI" not in root:
-        fail("FAT root does not contain EFI.")
-    efi = directory(root["EFI"][1], None)
-    if "BOOT" not in efi:
-        fail("FAT EFI directory does not contain BOOT.")
-    boot = directory(efi["BOOT"][1], None)
-    result: dict[str, bytes] = {}
-    for name in ("BOOTX64.EFI", "LIMINE.CFG", "KERNEL.EFI", "INITRD.IMG"):
-        if name not in boot:
-            fail(f"FAT boot directory is missing {name}.")
-        _, cluster, size = boot[name]
-        result[name] = read_cluster_chain(cluster, size)
-    return result
+def parse_directory(image: bytes, extent: int, size: int) -> dict[str, tuple[int, int, int]]:
+    raw = read_extent(image, extent, size)
+    entries: dict[str, tuple[int, int, int]] = {}
+    offset = 0
+    while offset < len(raw):
+        length = raw[offset]
+        if length == 0:
+            # This ISO uses one sector per directory, so the rest is padding.
+            break
+        if offset + length > len(raw) or length < 34:
+            fail(f"Invalid ISO directory record at sector {extent}, offset {offset}.")
+        record = raw[offset:offset + length]
+        file_extent = struct.unpack_from("<I", record, 2)[0]
+        file_size = struct.unpack_from("<I", record, 10)[0]
+        flags = record[25]
+        name_size = record[32]
+        name = record[33:33 + name_size]
+        if len(name) != name_size:
+            fail("Truncated ISO file identifier.")
+        if name == b"\0":
+            label = "."
+        elif name == b"\1":
+            label = ".."
+        else:
+            label = name.decode("ascii")
+            if ";" in label:
+                label = label.split(";", 1)[0]
+        entries[label] = (flags, file_extent, file_size)
+        offset += length
+    return entries
 
 
 def verify(path: Path) -> None:
@@ -103,26 +77,46 @@ def verify(path: Path) -> None:
     if sum(struct.unpack("<16H", catalog[:32])) & 0xFFFF:
         fail("El Torito validation checksum is invalid.")
     if catalog[1] != 0xEF or catalog[32] != 0x88 or catalog[33] != 0:
-        fail("No bootable x86_64 UEFI El Torito entry was found.")
-    efi_lba = struct.unpack_from("<I", catalog, 40)[0]
-    efi_size = 16 * 1024 * 1024
-    efi_image = image[efi_lba * SECTOR:efi_lba * SECTOR + efi_size]
-    if len(efi_image) != efi_size:
-        fail("EFI boot image is truncated.")
-    files = parse_fat16(efi_image)
-    if not files["BOOTX64.EFI"].startswith(b"MZ"):
-        fail("BOOTX64.EFI is not a PE image.")
-    if b"protocol: linux" not in files["LIMINE.CFG"]:
-        fail("LIMINE.CFG does not declare a Linux boot entry.")
-    if not files["KERNEL.EFI"].startswith(b"MZ"):
+        fail("No bootable UEFI initial El Torito entry was found.")
+    if catalog[64] != 0x91 or catalog[65] != 0xEF or catalog[96] != 0x88:
+        fail("No bootable UEFI El Torito section entry was found.")
+    initial_lba = struct.unpack_from("<I", catalog, 40)[0]
+    section_lba = struct.unpack_from("<I", catalog, 104)[0]
+    if initial_lba != section_lba:
+        fail("UEFI El Torito entries point to different boot images.")
+    boot_image = read_extent(image, initial_lba, 64)
+    if boot_image[:3] != b"\xeb\x3c\x90" or boot_image[54:62] != b"FAT12   ":
+        fail("El Torito boot image is not Limine's FAT12 UEFI CD image.")
+
+    root_extent = struct.unpack_from("<I", pvd, 158)[0]
+    root_size = struct.unpack_from("<I", pvd, 166)[0]
+    root = parse_directory(image, root_extent, root_size)
+    expected_root = ("BOOT", "LIMINE.CONF", "KERNEL.EFI", "INITRD.IMG", "README.TXT")
+    for name in expected_root:
+        if name not in root:
+            fail(f"ISO root is missing {name}.")
+    boot = parse_directory(image, root["BOOT"][1], root["BOOT"][2])
+    if "LIMINE-UEFI-CD.BIN" not in boot:
+        fail("ISO BOOT directory is missing Limine's UEFI CD image.")
+    _, boot_file_extent, boot_file_size = boot["LIMINE-UEFI-CD.BIN"]
+    if boot_file_extent != initial_lba or boot_file_size < 2 * 1024 * 1024:
+        fail("El Torito entry does not point to the ISO Limine CD file.")
+
+    config = read_extent(image, root["LIMINE.CONF"][1], root["LIMINE.CONF"][2])
+    kernel = read_extent(image, root["KERNEL.EFI"][1], root["KERNEL.EFI"][2])
+    initrd = read_extent(image, root["INITRD.IMG"][1], root["INITRD.IMG"][2])
+    if b"protocol: linux" not in config:
+        fail("LIMINE.CONF does not declare a Linux boot entry.")
+    if not kernel.startswith(b"MZ"):
         fail("KERNEL.EFI is not an EFI-stub Linux kernel.")
-    if not files["INITRD.IMG"].startswith(b"\x1f\x8b"):
+    if not initrd.startswith(b"\x1f\x8b"):
         fail("INITRD.IMG is not gzip-compressed.")
     print(f"OK: {path}")
     print(f"  size: {len(image) // 1024 // 1024} MiB")
-    print(f"  boot catalog: sector {catalog_lba}; EFI image: sector {efi_lba}")
-    for name, data in files.items():
-        print(f"  {name}: {len(data):,} bytes")
+    print(f"  boot catalog: sector {catalog_lba}; UEFI CD image: sector {initial_lba}")
+    print(f"  LIMINE.CONF: {len(config):,} bytes")
+    print(f"  KERNEL.EFI: {len(kernel):,} bytes")
+    print(f"  INITRD.IMG: {len(initrd):,} bytes")
 
 
 def main() -> int:
