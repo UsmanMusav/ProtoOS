@@ -32,4 +32,20 @@
 
 В текущем sandbox нет `debootstrap`/`mmdebstrap`, Docker/Podman, SquashFS-инструментов или доступа к зеркалу пакетов Debian. Поэтому этот коммит создаёт готовую конфигурацию и assets KDE Edition, но не выдаёт притворный VHD без настоящего Debian/Plasma userspace.
 
-Следующий технический шаг — получить разрешённый, проверяемый Debian rootfs или Debian cloud image, затем применить `scripts/provision-rootfs.sh`, создать загрузочный VHD и провести тест в Hyper-V.
+## Автоматическая сборка VHD
+
+Полная KDE-система строится в GitHub Actions, где доступно официальное зеркало Debian и привилегированные инструменты разметки диска. Запустите workflow **Build ProtoOS KDE Hyper-V VHD** вручную на ветке ProtoOS. Он:
+
+1. разворачивает Debian `trixie` в GPT-диске;
+2. устанавливает KDE Plasma, SDDM, Linux kernel и GRUB EFI;
+3. применяет ProtoOS Aurora, автоматический вход и ephemeral `/home/protoos`;
+4. создаёт динамический VHD с виртуальной ёмкостью 12 ГиБ;
+5. публикует VHD и SHA-256 как artifact GitHub Actions на 14 дней.
+
+Локальный запуск того же процесса возможен только на привилегированной Debian/Ubuntu-машине с доступом к репозиториям Debian:
+
+```sh
+sudo ./kde-edition/scripts/build-hyperv-vhd.sh
+```
+
+После успешной CI-сборки VHD необходимо подключить к **Контроллер SCSI** в Hyper-V Generation 2, отключить Secure Boot и проверить появление рабочего стола Plasma.

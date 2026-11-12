@@ -1,0 +1,49 @@
+name: Build ProtoOS KDE Hyper-V VHD
+
+on:
+  workflow_dispatch:
+    inputs:
+      debian_release:
+        description: Debian suite used for the KDE rootfs
+        required: true
+        default: trixie
+        type: choice
+        options:
+          - trixie
+          - bookworm
+      virtual_size:
+        description: Virtual disk size exposed to Hyper-V
+        required: true
+        default: 12G
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Debian KDE Plasma VHD
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out ProtoOS
+        uses: actions/checkout@v4
+
+      - name: Build dynamic Hyper-V VHD
+        env:
+          PROTOOS_DEBIAN_RELEASE: ${{ inputs.debian_release }}
+          PROTOOS_VIRTUAL_SIZE: ${{ inputs.virtual_size }}
+          PROTOOS_OUT_DIR: ${{ github.workspace }}/release
+          PROTOOS_WORK_DIR: ${{ runner.temp }}/protoos-kde-work
+        run: sudo --preserve-env=PROTOOS_DEBIAN_RELEASE,PROTOOS_VIRTUAL_SIZE,PROTOOS_OUT_DIR,PROTOOS_WORK_DIR ./kde-edition/scripts/build-hyperv-vhd.sh
+
+      - name: Publish VHD for Hyper-V testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProtoOS-KDE-HyperV-${{ inputs.debian_release }}
+          path: |
+            release/ProtoOS-KDE-0.4.0-HyperV.vhd
+            release/ProtoOS-KDE-0.4.0-HyperV.vhd.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
