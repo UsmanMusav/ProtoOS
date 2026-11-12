@@ -1,6 +1,11 @@
 name: Build ProtoOS KDE Hyper-V VHD
 
 on:
+  # This branch trigger starts the first real image build before the workflow
+  # reaches main. Manual dispatch remains available after the PR is merged.
+  push:
+    branches:
+      - arena/285b75c2-protoos
   workflow_dispatch:
     inputs:
       debian_release:

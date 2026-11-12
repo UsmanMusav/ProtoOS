@@ -53,7 +53,7 @@ mount "${LOOP_DEVICE}p2" "$ROOTFS"
 mkdir -p "$ROOTFS/boot/efi"
 mount "${LOOP_DEVICE}p1" "$ROOTFS/boot/efi"
 
-debootstrap --arch=amd64 --variant=minbase "$RELEASE" "$ROOTFS" http://deb.debian.org/debian
+debootstrap --arch=amd64 --variant=minbase "$RELEASE" "$ROOTFS" https://deb.debian.org/debian
 
 # Install the packages that turn the rootfs into a bootable Plasma desktop.
 cat > "$ROOTFS/tmp/protoos-base-packages.txt" <<'PACKAGES'
