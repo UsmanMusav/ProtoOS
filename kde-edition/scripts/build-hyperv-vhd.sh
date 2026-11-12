@@ -53,12 +53,21 @@ parted --script "$RAW" \
 LOOP_DEVICE=$(losetup --find --show --partscan "$RAW")
 mkfs.vfat -F 32 -n PROTOOS_EFI "${LOOP_DEVICE}p1"
 mkfs.ext4 -F -L protoos-root "${LOOP_DEVICE}p2"
+ROOT_UUID=$(blkid -s UUID -o value "${LOOP_DEVICE}p2")
+EFI_UUID=$(blkid -s UUID -o value "${LOOP_DEVICE}p1")
 mkdir -p "$ROOTFS"
 mount "${LOOP_DEVICE}p2" "$ROOTFS"
 mkdir -p "$ROOTFS/boot/efi"
 mount "${LOOP_DEVICE}p1" "$ROOTFS/boot/efi"
 
 debootstrap --arch=amd64 --variant=minbase "$RELEASE" "$ROOTFS" https://deb.debian.org/debian
+
+# Make the root and EFI mount locations explicit. In particular, this gives
+# GRUB and the initramfs the same stable root identity that Hyper-V will see.
+cat > "$ROOTFS/etc/fstab" <<FSTAB
+UUID=$ROOT_UUID / ext4 errors=remount-ro 0 1
+UUID=$EFI_UUID /boot/efi vfat umask=0077 0 1
+FSTAB
 
 # Package maintainer scripts, initramfs generation and EFI setup must see the
 # normal kernel pseudo-filesystems. Binding them now also avoids a half-set-up
@@ -145,6 +154,29 @@ chroot "$ROOTFS" /bin/sh -eu -c '
     apt-get clean
     rm -rf /var/lib/apt/lists/* /tmp/*
 '
+
+# Do not rely on a GRUB prefix inferred while building inside a chroot. The
+# fallback EFI executable is what Hyper-V starts, so provide it an explicit,
+# UUID-pinned route to the generated root-disk menu. Write both documented
+# fallback locations: GRUB can use EFI/BOOT when firmware starts BOOTX64.EFI,
+# or the bootloader-id directory when it retains that prefix.
+for efi_dir in "$ROOTFS/boot/efi/EFI/BOOT" "$ROOTFS/boot/efi/EFI/ProtoOS"; do
+    install -d "$efi_dir"
+    cat > "$efi_dir/grub.cfg" <<GRUB_EFI
+search --no-floppy --fs-uuid --set=root $ROOT_UUID
+set prefix=(\$root)/boot/grub
+configfile \$prefix/grub.cfg
+GRUB_EFI
+done
+
+# Fail the build rather than publishing another VHD that can only reach a
+# `grub>` prompt because its EFI bootstrap configuration is absent.
+test -s "$ROOTFS/boot/grub/grub.cfg"
+for efi_config in "$ROOTFS/boot/efi/EFI/BOOT/grub.cfg" "$ROOTFS/boot/efi/EFI/ProtoOS/grub.cfg"; do
+    test -s "$efi_config"
+    grep -Fqx "search --no-floppy --fs-uuid --set=root $ROOT_UUID" "$efi_config"
+    grep -Fqx 'configfile $prefix/grub.cfg' "$efi_config"
+done
 
 # qemu-img writes a standards-compliant dynamic VHD that Hyper-V can attach to
 # a SCSI controller. No sparse files are committed to Git; CI publishes it.
