@@ -43,12 +43,13 @@ cp -a "$project/rootfs/etc/skel/." "$rootfs/etc/skel/"
 # binaries while presenting the concise ProtoOS roles in the application menu.
 cp -a "$project/rootfs/usr/local/share/applications/." "$rootfs/usr/local/share/applications/"
 
-# Keep the performance promise testable: the installed rootfs must carry these
-# files before a VHD is published, not merely document them in the repository.
+# Keep the selected Aurora Motion profile testable: the installed rootfs must
+# carry its settings before a VHD is published, not merely document them.
 test -s "$rootfs/etc/skel/.config/kwinrc"
 test -s "$rootfs/etc/skel/.config/baloofilerc"
 test -s "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
-grep -Fqx 'Enabled=false' "$rootfs/etc/skel/.config/kwinrc"
+grep -Fqx 'Enabled=true' "$rootfs/etc/skel/.config/kwinrc"
+grep -Fqx 'fadeEnabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'Indexing-Enabled=false' "$rootfs/etc/skel/.config/baloofilerc"
 for launcher in org.kde.dolphin org.kde.konsole org.kde.kate org.kde.okular systemsettings; do
     test -s "$rootfs/usr/local/share/applications/$launcher.desktop"
