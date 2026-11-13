@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Get Started
+Name[ru]=Начать работу
+GenericName=ProtoOS Welcome
+GenericName[ru]=Знакомство с ProtoOS
+Comment=Open the ProtoOS quick-start guide
+Comment[ru]=Открыть краткое руководство ProtoOS
+Exec=protoos-welcome
+Icon=protoos-welcome
+Categories=Qt;KDE;Utility;Settings;
+StartupNotify=true

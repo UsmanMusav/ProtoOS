@@ -17,9 +17,13 @@ kde-config-sddm
 konsole
 dolphin
 ark
+gwenview
+spectacle
+kdialog
 kate
 okular
 systemsettings
+xdg-user-dirs
 
 # Visual/input integration
 xserver-xorg-core

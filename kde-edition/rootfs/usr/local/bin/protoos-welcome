@@ -1,0 +1,65 @@
+#!/bin/sh
+# A small, local first-run guide. It keeps the Live desktop approachable without
+# adding a browser-based start page, telemetry, or a resident background task.
+set -u
+
+if ! command -v kdialog >/dev/null 2>&1; then
+    exit 0
+fi
+
+case "${LANG:-${LC_MESSAGES:-}}" in
+    ru*|RU*)
+        title='Добро пожаловать в ProtoOS'
+        prompt='Выберите, с чего хотите начать. Этот помощник всегда доступен в панели приложений.'
+        browser='Открыть браузер Proton'
+        files='Открыть файлы'
+        documents='Открыть папку «Документы»'
+        screenshot='Сделать снимок экрана'
+        network='Настроить сеть'
+        appearance='Настроить внешний вид'
+        shortcuts='Горячие клавиши'
+        live='О режиме Live'
+        live_text='ProtoOS сейчас работает в режиме Live. Файлы и настройки в домашней папке сохраняются только до выключения виртуальной машины. Скопируйте важные документы на подключённый диск или в облако до выключения.'
+        shortcuts_text='Meta — открыть меню приложений\nAlt+Tab — переключить окно\nPrint Screen — сделать снимок\nAlt+Shift+F12 — включить или выключить эффекты окон'
+        ;;
+    *)
+        title='Welcome to ProtoOS'
+        prompt='Choose a starting point. This helper is always available from the application panel.'
+        browser='Open Proton Browser'
+        files='Open Files'
+        documents='Open Documents folder'
+        screenshot='Take a screenshot'
+        network='Set up network'
+        appearance='Personalize appearance'
+        shortcuts='Keyboard shortcuts'
+        live='About Live mode'
+        live_text='ProtoOS is running in Live mode. Files and settings in the home folder last only until the virtual machine is shut down. Copy important work to an attached drive or cloud storage before powering off.'
+        shortcuts_text='Meta — open the application menu\nAlt+Tab — switch windows\nPrint Screen — take a screenshot\nAlt+Shift+F12 — toggle window effects'
+        ;;
+esac
+
+while :; do
+    choice=$(kdialog --title "$title" --icon protoos-welcome --menu "$prompt" \
+        browser "$browser" \
+        files "$files" \
+        documents "$documents" \
+        screenshot "$screenshot" \
+        network "$network" \
+        appearance "$appearance" \
+        shortcuts "$shortcuts" \
+        live "$live") || exit 0
+
+    case "$choice" in
+        browser) exec proton about:blank ;;
+        files) exec dolphin "$HOME" ;;
+        documents)
+            mkdir -p "$HOME/Documents"
+            exec dolphin "$HOME/Documents"
+            ;;
+        screenshot) exec spectacle --gui ;;
+        network) exec systemsettings kcm_networkmanagement ;;
+        appearance) exec systemsettings kcm_colors ;;
+        shortcuts) kdialog --title "$title" --icon protoos-welcome --msgbox "$shortcuts_text" ;;
+        live) kdialog --title "$title" --icon protoos-welcome --msgbox "$live_text" ;;
+    esac
+done

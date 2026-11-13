@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Archives
+Name[ru]=Архивы
+GenericName=ProtoOS Archive Manager
+GenericName[ru]=Работа с архивами
+Comment=Open and create compressed archives
+Comment[ru]=Открытие и создание архивов
+Exec=ark
+Icon=protoos-archive
+Categories=Qt;KDE;Utility;Archiving;
+MimeType=application/zip;application/x-tar;application/x-compressed-tar;application/x-7z-compressed;
+StartupNotify=true

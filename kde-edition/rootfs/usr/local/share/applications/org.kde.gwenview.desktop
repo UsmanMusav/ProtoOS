@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Images
+Name[ru]=Изображения
+GenericName=ProtoOS Image Viewer
+GenericName[ru]=Просмотр изображений
+Comment=View and organize pictures
+Comment[ru]=Просмотр и организация изображений
+Exec=gwenview
+Icon=protoos-images
+Categories=Qt;KDE;Graphics;Viewer;
+MimeType=image/bmp;image/gif;image/jpeg;image/png;image/svg+xml;image/webp;
+StartupNotify=true

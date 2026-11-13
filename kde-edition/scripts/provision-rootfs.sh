@@ -62,7 +62,7 @@ fi
 
 install -d "$rootfs/etc/sddm.conf.d" "$rootfs/usr/share/color-schemes" \
     "$rootfs/usr/share/plasma/look-and-feel" "$rootfs/etc/skel/.local/share/wallpapers" \
-    "$rootfs/usr/share/icons" "$rootfs/usr/local/share/applications"
+    "$rootfs/usr/share/icons" "$rootfs/usr/local/bin" "$rootfs/usr/local/share/applications"
 cp "$project/rootfs/etc/sddm.conf.d/10-protoos-autologin.conf" "$rootfs/etc/sddm.conf.d/"
 cp "$project/branding/colors/"*.colors "$rootfs/usr/share/color-schemes/"
 cp -a "$project/branding/look-and-feel/org.protoos.desktop" "$rootfs/usr/share/plasma/look-and-feel/"
@@ -72,6 +72,14 @@ cp -a "$project/rootfs/etc/skel/." "$rootfs/etc/skel/"
 # /usr/local takes precedence over package desktop entries. Keep the package
 # binaries while presenting the concise ProtoOS roles in the application menu.
 cp -a "$project/rootfs/usr/local/share/applications/." "$rootfs/usr/local/share/applications/"
+cp -a "$project/rootfs/usr/local/bin/." "$rootfs/usr/local/bin/"
+chmod 0755 "$rootfs/usr/local/bin/protoos-welcome"
+# The Live-home service copies /etc/skel on every boot, so create visible,
+# predictable folders there rather than only in the builder's temporary user.
+install -d "$rootfs/etc/skel/Desktop" "$rootfs/etc/skel/Documents" \
+    "$rootfs/etc/skel/Downloads" "$rootfs/etc/skel/Pictures" \
+    "$rootfs/etc/skel/Music" "$rootfs/etc/skel/Videos" "$rootfs/etc/skel/Public" \
+    "$rootfs/etc/skel/Templates"
 
 # Keep the selected Aurora Motion profile testable: the installed rootfs must
 # carry its settings before a VHD is published, not merely document them.
@@ -81,11 +89,23 @@ test -s "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
 grep -Fqx 'Enabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'fadeEnabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'Indexing-Enabled=false' "$rootfs/etc/skel/.config/baloofilerc"
-for launcher in org.kde.dolphin org.kde.konsole org.kde.kate org.kde.okular systemsettings org.protoos.proton; do
+for launcher in org.protoos.welcome org.protoos.proton org.kde.dolphin \
+    org.kde.konsole org.kde.kate org.kde.okular org.kde.spectacle \
+    org.kde.gwenview org.kde.ark systemsettings; do
     test -s "$rootfs/usr/local/share/applications/$launcher.desktop"
 done
+test -x "$rootfs/usr/local/bin/protoos-welcome"
+test -s "$rootfs/etc/skel/.config/user-dirs.dirs"
+for folder in Desktop Documents Downloads Pictures Music Videos Public Templates; do
+    test -d "$rootfs/etc/skel/$folder"
+done
 test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/index.theme"
-test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/protoos-proton.svg"
+for icon in protoos-proton protoos-welcome protoos-capture protoos-images protoos-archive; do
+    test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/$icon.svg"
+done
+for command in kdialog spectacle gwenview ark; do
+    chroot "$rootfs" /bin/sh -eu -c "command -v $command"
+done
 if [ "$proton_required" = 1 ]; then
     chroot "$rootfs" /bin/sh -eu -c 'command -v proton'
 fi
