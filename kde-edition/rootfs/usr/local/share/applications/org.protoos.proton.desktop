@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Proton Browser
+Name[ru]=Браузер Proton
+GenericName=ProtoOS Web Browser
+GenericName[ru]=Веб-браузер ProtoOS
+Comment=Browse the web with Proton
+Comment[ru]=Работа в интернете с Proton
+Exec=iskatel %U
+Icon=protoos-proton
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml_xml;x-scheme-handler/http;x-scheme-handler/https;
+StartupNotify=true
+StartupWMClass=iskatel

@@ -25,7 +25,8 @@
 - `manifest/packages.txt` — набор Debian-пакетов для Plasma Live-системы;
 - `rootfs/etc/sddm.conf.d/10-protoos-autologin.conf` — автоматический вход в Plasma;
 - `rootfs/etc/skel/` — начальные настройки и автозапуск;
-- `branding/` — обои и метаданные дизайна;
+- `branding/` — обои, цветовые схемы, look-and-feel и оригинальные иконки ProtoOS Aurora;
+- `third-party/Proton-browser.md` — источник, целостность и условия встраиваемого Proton Browser;
 - `DESIGN_DIRECTION.md` — утверждённое направление ProtoOS Aurora и ограничения производительности Hyper-V;
 - `concepts/protoos-aurora-performance-desktop.png` — визуальный концепт Aurora Performance;
 - `scripts/provision-rootfs.sh` — воспроизводимый скрипт настройки уже подготовленного Debian rootfs.

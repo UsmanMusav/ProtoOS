@@ -9,7 +9,14 @@ OUT=${PROTOOS_OUT_DIR:-"$ROOT/out"}
 WORK=${PROTOOS_WORK_DIR:-"$ROOT/build/kde-vhd"}
 RELEASE=${PROTOOS_DEBIAN_RELEASE:-trixie}
 VIRTUAL_SIZE=${PROTOOS_VIRTUAL_SIZE:-12G}
-VHD="$OUT/ProtoOS-KDE-0.4.2-HyperV.vhd"
+# Proton Browser 5.1.0 is the user-requested amd64 .deb from the author's
+# GitHub release. Pinning its asset SHA-256 makes the proprietary dependency
+# auditable and prevents a silent asset replacement from entering a VHD.
+PROTON_VERSION=5.1.0
+PROTON_DEB_NAME=iskatel-linux-amd64.deb
+PROTON_DEB_URL="https://github.com/UsmanMusav/Proton-updates/releases/download/v${PROTON_VERSION}/${PROTON_DEB_NAME}"
+PROTON_DEB_SHA256=e7a9c505ec626df0f991450beef7acf8ce6fc3f27f66a01220e9fb1bf0d4fb81
+VHD="$OUT/ProtoOS-KDE-0.4.3-HyperV.vhd"
 RAW="$WORK/protoos-kde.raw"
 ROOTFS="$WORK/rootfs"
 LOOP_DEVICE=
@@ -41,7 +48,7 @@ rm -rf "$ROOTFS" "$RAW" "$VHD"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends \
-    debootstrap dosfstools e2fsprogs gdisk parted qemu-utils rsync ca-certificates
+    ca-certificates curl debootstrap dosfstools e2fsprogs gdisk parted qemu-utils rsync
 
 # A dynamic VHD keeps download size reasonable while exposing a 12 GiB virtual
 # disk to Hyper-V. The first partition is a normal ESP, the second is Debian.
@@ -93,9 +100,17 @@ chroot "$ROOTFS" /bin/sh -eu -c '
     rm -f /tmp/protoos-base-packages.txt
 '
 
-# `provision-rootfs.sh` installs KDE Plasma, the branding, the default user and
-# SDDM auto-login. Its package manifest is versioned next to the design assets.
-"$EDITION/scripts/provision-rootfs.sh" "$ROOTFS"
+# Fetch the browser only from the release URL specified above, then verify its
+# GitHub-provided SHA-256 before its package maintainer scripts can run.
+PROTON_DEB="$WORK/$PROTON_DEB_NAME"
+curl --fail --location --proto '=https' --tlsv1.2 --retry 3 --retry-all-errors \
+    --output "$PROTON_DEB" "$PROTON_DEB_URL"
+printf '%s  %s\n' "$PROTON_DEB_SHA256" "$PROTON_DEB" | sha256sum --check --strict
+
+# `provision-rootfs.sh` installs KDE Plasma, the pinned Proton browser,
+# branding, the default user and SDDM auto-login.
+PROTOOS_PROTON_DEB="$PROTON_DEB" PROTOOS_REQUIRE_PROTON=1 \
+    "$EDITION/scripts/provision-rootfs.sh" "$ROOTFS"
 
 cat > "$ROOTFS/etc/default/grub" <<'GRUB'
 GRUB_DEFAULT=0
@@ -135,10 +150,10 @@ RequiredBy=display-manager.service
 SERVICE
 
 cat > "$ROOTFS/etc/os-release" <<'OS_RELEASE'
-PRETTY_NAME="ProtoOS KDE Edition 0.4.2 Aurora Motion"
+PRETTY_NAME="ProtoOS KDE Edition 0.4.3 Aurora Motion"
 NAME="ProtoOS KDE Edition"
-VERSION_ID="0.4.2"
-VERSION="0.4.2 (Aurora Motion, Debian KDE Plasma Live)"
+VERSION_ID="0.4.3"
+VERSION="0.4.3 (Aurora Motion with Proton Browser, Debian KDE Plasma Live)"
 ID=protoos
 ID_LIKE=debian
 HOME_URL="https://github.com/UsmanMusav/ProtoOS"

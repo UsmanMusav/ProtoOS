@@ -7,6 +7,6 @@ GenericName[ru]=Текстовый редактор ProtoOS
 Comment=Create and edit text files
 Comment[ru]=Создание и редактирование текстовых файлов
 Exec=kate --new
-Icon=accessories-text-editor
+Icon=protoos-text
 Categories=Qt;KDE;Utility;TextEditor;
 StartupNotify=true

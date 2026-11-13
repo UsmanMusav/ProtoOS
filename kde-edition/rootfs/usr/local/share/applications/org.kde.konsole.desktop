@@ -7,6 +7,6 @@ GenericName[ru]=Терминал ProtoOS
 Comment=Run commands in a ProtoOS session
 Comment[ru]=Выполнение команд в сеансе ProtoOS
 Exec=konsole
-Icon=utilities-terminal
+Icon=protoos-terminal
 Categories=Qt;KDE;System;TerminalEmulator;
 StartupNotify=true

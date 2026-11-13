@@ -11,6 +11,8 @@ fi
 rootfs=$1
 project=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 packages="$project/manifest/packages.txt"
+proton_deb=${PROTOOS_PROTON_DEB:-}
+proton_required=${PROTOOS_REQUIRE_PROTON:-0}
 
 if [ ! -d "$rootfs/etc" ]; then
     echo "Not a Debian rootfs: $rootfs" >&2
@@ -31,13 +33,41 @@ if [ "${PROTOOS_SKIP_APT:-0}" != 1 ]; then
     '
 fi
 
+# Proton is a user-requested, closed-source browser distributed through its
+# author's public GitHub release. The builder supplies a version- and
+# SHA-pinned .deb; do not substitute an unverified local file here.
+if [ "$proton_required" = 1 ] && [ -z "$proton_deb" ]; then
+    echo "PROTOOS_REQUIRE_PROTON=1 requires PROTOOS_PROTON_DEB" >&2
+    exit 1
+fi
+if [ -n "$proton_deb" ]; then
+    test -f "$proton_deb"
+    proton_package=$(dpkg-deb -f "$proton_deb" Package)
+    proton_architecture=$(dpkg-deb -f "$proton_deb" Architecture)
+    if [ "$proton_architecture" != amd64 ]; then
+        echo "Proton package is not amd64: $proton_architecture" >&2
+        exit 1
+    fi
+    cp "$proton_deb" "$rootfs/tmp/proton-browser.deb"
+    chroot "$rootfs" /bin/sh -eu -c '
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends /tmp/proton-browser.deb
+        rm -f /tmp/proton-browser.deb
+        apt-get clean
+    '
+    chroot "$rootfs" dpkg-query -W -f '${Status} ${Version}\n' "$proton_package"
+    chroot "$rootfs" /bin/sh -eu -c 'command -v iskatel'
+fi
+
 install -d "$rootfs/etc/sddm.conf.d" "$rootfs/usr/share/color-schemes" \
     "$rootfs/usr/share/plasma/look-and-feel" "$rootfs/etc/skel/.local/share/wallpapers" \
-    "$rootfs/usr/local/share/applications"
+    "$rootfs/usr/share/icons" "$rootfs/usr/local/share/applications"
 cp "$project/rootfs/etc/sddm.conf.d/10-protoos-autologin.conf" "$rootfs/etc/sddm.conf.d/"
 cp "$project/branding/colors/"*.colors "$rootfs/usr/share/color-schemes/"
 cp -a "$project/branding/look-and-feel/org.protoos.desktop" "$rootfs/usr/share/plasma/look-and-feel/"
 cp -a "$project/branding/wallpapers/ProtoOS" "$rootfs/etc/skel/.local/share/wallpapers/"
+cp -a "$project/branding/icons/ProtoOS-Aurora" "$rootfs/usr/share/icons/"
 cp -a "$project/rootfs/etc/skel/." "$rootfs/etc/skel/"
 # /usr/local takes precedence over package desktop entries. Keep the package
 # binaries while presenting the concise ProtoOS roles in the application menu.
@@ -51,9 +81,14 @@ test -s "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
 grep -Fqx 'Enabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'fadeEnabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'Indexing-Enabled=false' "$rootfs/etc/skel/.config/baloofilerc"
-for launcher in org.kde.dolphin org.kde.konsole org.kde.kate org.kde.okular systemsettings; do
+for launcher in org.kde.dolphin org.kde.konsole org.kde.kate org.kde.okular systemsettings org.protoos.proton; do
     test -s "$rootfs/usr/local/share/applications/$launcher.desktop"
 done
+test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/index.theme"
+test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/protoos-proton.svg"
+if [ "$proton_required" = 1 ]; then
+    chroot "$rootfs" /bin/sh -eu -c 'command -v iskatel'
+fi
 
 if ! chroot "$rootfs" id protoos >/dev/null 2>&1; then
     chroot "$rootfs" useradd --create-home --shell /bin/bash --groups sudo,video,audio,input protoos

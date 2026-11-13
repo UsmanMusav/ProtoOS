@@ -7,6 +7,6 @@ GenericName[ru]=Настройки ProtoOS
 Comment=Configure the ProtoOS session
 Comment[ru]=Настройка сеанса ProtoOS
 Exec=systemsettings
-Icon=preferences-system
+Icon=protoos-settings
 Categories=Qt;KDE;Settings;
 StartupNotify=true

@@ -1,0 +1,11 @@
+[Icon Theme]
+Name=ProtoOS Aurora
+Comment=Original Aurora application icons for ProtoOS
+Directories=scalable/apps
+
+[scalable/apps]
+Size=48
+Type=Scalable
+MinSize=16
+MaxSize=512
+Context=Applications

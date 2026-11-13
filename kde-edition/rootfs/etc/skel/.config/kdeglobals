@@ -2,7 +2,7 @@
 ColorScheme=ProtoOS Aurora Dark
 
 [Icons]
-Theme=breeze-dark
+Theme=ProtoOS-Aurora
 
 [KDE]
 # Aurora Motion uses short, legible transitions instead of slow decorative
