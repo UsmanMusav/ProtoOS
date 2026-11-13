@@ -89,6 +89,9 @@ test -s "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
 grep -Fqx 'Enabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'fadeEnabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'Indexing-Enabled=false' "$rootfs/etc/skel/.config/baloofilerc"
+grep -Fqx 'ColorScheme=ProtoOS Proton Dark' "$rootfs/etc/skel/.config/kdeglobals"
+grep -Fqx 'Name=ProtoOS Proton Dark' "$rootfs/usr/share/color-schemes/ProtoOS Aurora Dark.colors"
+grep -Fqx 'Name=ProtoOS Proton Light' "$rootfs/usr/share/color-schemes/ProtoOS Aurora Light.colors"
 for launcher in org.protoos.welcome org.protoos.proton org.kde.dolphin \
     org.kde.konsole org.kde.kate org.kde.okular org.kde.gwenview \
     org.kde.ark systemsettings; do
@@ -100,6 +103,10 @@ for folder in Desktop Documents Downloads Pictures Music Videos Public Templates
     test -d "$rootfs/etc/skel/$folder"
 done
 test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/index.theme"
+grep -Fqx 'Inherits=breeze-dark,breeze,hicolor' "$rootfs/usr/share/icons/ProtoOS-Aurora/index.theme"
+test -s "$rootfs/usr/share/icons/breeze-dark/index.theme"
+test -s "$rootfs/usr/share/icons/breeze/index.theme"
+test -s "$rootfs/usr/share/icons/hicolor/index.theme"
 for icon in protoos-proton protoos-welcome protoos-images protoos-archive; do
     test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/$icon.svg"
 done

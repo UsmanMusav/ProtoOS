@@ -1,18 +1,21 @@
 [General]
-ColorScheme=ProtoOS Aurora Dark
+ColorScheme=ProtoOS Proton Dark
 
 [Icons]
+# ProtoOS-Aurora supplies the branded app icons and explicitly inherits the
+# complete Breeze and hicolor themes, preventing missing system/mime icons.
 Theme=ProtoOS-Aurora
 
 [KDE]
-# Aurora Motion uses short, legible transitions instead of slow decorative
-# effects. The compositor can be toggled instantly with Alt+Shift+F12.
-AnimationDurationFactor=0.75
+# Proton Flow makes each state change visible but keeps it short. Users who
+# prefer reduced motion can set this to 0 in System Settings; Alt+Shift+F12
+# remains an instant compositor toggle for a constrained VM.
+AnimationDurationFactor=0.60
 LookAndFeelPackage=org.protoos.desktop
 SingleClick=false
 
 [WM]
-activeBackground=37,44,72
-activeForeground=244,247,255
-inactiveBackground=31,35,52
-inactiveForeground=182,190,214
+activeBackground=31,38,66
+activeForeground=248,250,255
+inactiveBackground=23,28,49
+inactiveForeground=174,185,215

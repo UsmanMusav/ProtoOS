@@ -16,6 +16,7 @@ case "${LANG:-${LC_MESSAGES:-}}" in
         documents='Открыть папку «Документы»'
         network='Настроить сеть'
         appearance='Настроить внешний вид'
+        motion='Настроить эффекты окон'
         shortcuts='Горячие клавиши'
         live='О режиме Live'
         live_text='ProtoOS сейчас работает в режиме Live. Файлы и настройки в домашней папке сохраняются только до выключения виртуальной машины. Скопируйте важные документы на подключённый диск или в облако до выключения.'
@@ -29,6 +30,7 @@ case "${LANG:-${LC_MESSAGES:-}}" in
         documents='Open Documents folder'
         network='Set up network'
         appearance='Personalize appearance'
+        motion='Adjust window effects'
         shortcuts='Keyboard shortcuts'
         live='About Live mode'
         live_text='ProtoOS is running in Live mode. Files and settings in the home folder last only until the virtual machine is shut down. Copy important work to an attached drive or cloud storage before powering off.'
@@ -43,6 +45,7 @@ while :; do
         documents "$documents" \
         network "$network" \
         appearance "$appearance" \
+        motion "$motion" \
         shortcuts "$shortcuts" \
         live "$live") || exit 0
 
@@ -55,6 +58,7 @@ while :; do
             ;;
         network) exec systemsettings kcm_networkmanagement ;;
         appearance) exec systemsettings kcm_colors ;;
+        motion) exec systemsettings kcm_kwin_effects ;;
         shortcuts) kdialog --title "$title" --icon protoos-welcome --msgbox "$shortcuts_text" ;;
         live) kdialog --title "$title" --icon protoos-welcome --msgbox "$live_text" ;;
     esac

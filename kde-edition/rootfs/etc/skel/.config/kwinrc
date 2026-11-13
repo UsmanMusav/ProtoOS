@@ -1,24 +1,38 @@
-# ProtoOS Aurora Motion: polished, restrained KWin effects for a Hyper-V VM
-# with adequate memory. Avoid blur and 3D novelty effects; they cost more than
-# they add to the Aurora visual language.
+# ProtoOS Proton Flow: many small, comprehensible transitions instead of a
+# single heavy visual effect. The profile follows Proton's documented approach:
+# clear focus states and smooth feedback, with expensive novelty effects left off.
 [Compositing]
-AnimationSpeed=3
+AnimationSpeed=2
 Backend=OpenGL
 Enabled=true
 OpenGLIsUnsafe=false
 
 [Plugins]
-blurEnabled=false
-cubeEnabled=false
-cubeslideEnabled=false
+# Everyday feedback: opening, closing, maximizing, dialogs, popups, tiling
+# hints and workspace navigation all receive a short distinct transition.
+dialogparentEnabled=true
+desktopgridEnabled=true
 fadeEnabled=true
+glideEnabled=true
+highlightwindowEnabled=true
 loginEnabled=true
-magiclampEnabled=false
 maximizeEnabled=true
+overviewEnabled=true
 scaleEnabled=true
+slideEnabled=true
 slidingpopupsEnabled=true
+snaphelperEnabled=true
+startupfeedbackEnabled=true
 translucencyEnabled=true
 windowapertureEnabled=true
+
+# Preserve a polished Hyper-V baseline: no live blur or costly 3D/physics.
+blurEnabled=false
+contrastEnabled=false
+cubeEnabled=false
+cubeslideEnabled=false
+fallapartEnabled=false
+magiclampEnabled=false
 wobblywindowsEnabled=false
 
 [Windows]
