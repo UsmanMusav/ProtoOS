@@ -191,9 +191,23 @@ for efi_config in "$ROOTFS/boot/efi/EFI/BOOT/grub.cfg" "$ROOTFS/boot/efi/EFI/Pro
     grep -Fqx 'configfile $prefix/grub.cfg' "$efi_config"
 done
 
+# Commit journal/FAT metadata and release every loop-backed mount *before*
+# converting the raw disk. Converting an actively mounted disk can capture the
+# old BOOTX64.EFI or an uncommitted /boot/grub/grub.cfg, which manifests as an
+# otherwise unexplained `grub>` prompt in Hyper-V.
+sync
+for fs in run sys proc dev/pts dev; do
+    mountpoint -q "$ROOTFS/$fs" && umount "$ROOTFS/$fs"
+done
+umount "$ROOTFS/boot/efi"
+umount "$ROOTFS"
+losetup -d "$LOOP_DEVICE"
+LOOP_DEVICE=
+
 # qemu-img writes a standards-compliant dynamic VHD that Hyper-V can attach to
 # a SCSI controller. No sparse files are committed to Git; CI publishes it.
 qemu-img convert -p -f raw -O vpc -o subformat=dynamic "$RAW" "$VHD"
+qemu-img check "$VHD"
 qemu-img info "$VHD"
 sha256sum "$VHD" | tee "$VHD.sha256"
 echo "Built $VHD"
