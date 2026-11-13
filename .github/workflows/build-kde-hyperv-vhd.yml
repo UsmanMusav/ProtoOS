@@ -55,8 +55,8 @@ jobs:
         with:
           name: ProtoOS-KDE-HyperV-${{ inputs.debian_release || 'trixie' }}
           path: |
-            release/ProtoOS-KDE-0.4.0-HyperV.vhd
-            release/ProtoOS-KDE-0.4.0-HyperV.vhd.sha256
+            release/ProtoOS-KDE-0.4.1-HyperV.vhd
+            release/ProtoOS-KDE-0.4.1-HyperV.vhd.sha256
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
@@ -70,7 +70,7 @@ jobs:
           # The builder runs under sudo, so take ownership before producing the
           # release-side compressed file as the unprivileged Actions runner.
           sudo chown -R "$(id -u):$(id -g)" release
-          VHD=release/ProtoOS-KDE-0.4.0-HyperV.vhd
+          VHD=release/ProtoOS-KDE-0.4.1-HyperV.vhd
           xz --threads=0 --compress --keep --force --verbose "$VHD" 2>&1 | tee "${RUNNER_TEMP}/protoos-kde-release.log"
           sha256sum "$VHD.xz" > "$VHD.xz.sha256"
 
@@ -78,17 +78,17 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: v0.4.0-kde-preview.4
+          RELEASE_TAG: v0.4.1-aurora-preview.1
         run: |
           set -euo pipefail
           gh release create "$RELEASE_TAG" \
             --target "$GITHUB_SHA" \
-            --title "ProtoOS KDE Edition 0.4.0 Preview 4" \
-            --notes "Debian Trixie KDE Plasma Live preview for Hyper-V Generation 2. Preview 4 flushes and unmounts the filesystem before VHD conversion, so the EFI GRUB bootstrap and root boot menu are committed to the published disk. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
+            --title "ProtoOS KDE Edition 0.4.1 Aurora Performance Preview 1" \
+            --notes "Debian Trixie KDE Plasma Live preview for Hyper-V Generation 2. Aurora Performance disables the Plasma compositor and file-content indexer by default, adds a lightweight ProtoOS panel layout, and presents core apps with ProtoOS names. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
             --prerelease \
-            release/ProtoOS-KDE-0.4.0-HyperV.vhd.xz \
-            release/ProtoOS-KDE-0.4.0-HyperV.vhd.xz.sha256 \
-            release/ProtoOS-KDE-0.4.0-HyperV.vhd.sha256
+            release/ProtoOS-KDE-0.4.1-HyperV.vhd.xz \
+            release/ProtoOS-KDE-0.4.1-HyperV.vhd.xz.sha256 \
+            release/ProtoOS-KDE-0.4.1-HyperV.vhd.sha256
 
       - name: Publish failure diagnostics
         if: ${{ failure() }}

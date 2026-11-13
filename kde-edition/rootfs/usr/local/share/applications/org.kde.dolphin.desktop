@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Files
+Name[ru]=Файлы
+GenericName=ProtoOS Files
+GenericName[ru]=Файловый менеджер ProtoOS
+Comment=Browse files and folders
+Comment[ru]=Работа с файлами и папками
+Exec=dolphin %U
+Icon=system-file-manager
+Categories=Qt;KDE;System;Utility;FileManager;
+MimeType=inode/directory;
+StartupNotify=true

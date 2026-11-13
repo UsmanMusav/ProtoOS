@@ -5,6 +5,9 @@ ColorScheme=ProtoOS Aurora Dark
 Theme=breeze-dark
 
 [KDE]
+# The user-selected Aurora Performance profile favours immediate feedback over
+# effects that require the Hyper-V software renderer to compose each frame.
+AnimationDurationFactor=0
 LookAndFeelPackage=org.protoos.desktop
 SingleClick=false
 

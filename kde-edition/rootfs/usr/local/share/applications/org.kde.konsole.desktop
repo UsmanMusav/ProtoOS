@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Terminal
+Name[ru]=Терминал
+GenericName=ProtoOS Terminal
+GenericName[ru]=Терминал ProtoOS
+Comment=Run commands in a ProtoOS session
+Comment[ru]=Выполнение команд в сеансе ProtoOS
+Exec=konsole
+Icon=utilities-terminal
+Categories=Qt;KDE;System;TerminalEmulator;
+StartupNotify=true

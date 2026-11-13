@@ -1,0 +1,10 @@
+# ProtoOS Aurora Performance: Hyper-V uses a software-rendered Plasma desktop.
+# Preserve fast input and window movement by avoiding an always-running scene.
+[Compositing]
+AnimationSpeed=0
+Backend=QPainter
+Enabled=false
+OpenGLIsUnsafe=true
+
+[Windows]
+RollOverDesktops=false

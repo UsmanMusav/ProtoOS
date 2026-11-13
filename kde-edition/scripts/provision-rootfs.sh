@@ -32,12 +32,27 @@ if [ "${PROTOOS_SKIP_APT:-0}" != 1 ]; then
 fi
 
 install -d "$rootfs/etc/sddm.conf.d" "$rootfs/usr/share/color-schemes" \
-    "$rootfs/usr/share/plasma/look-and-feel" "$rootfs/etc/skel/.local/share/wallpapers"
+    "$rootfs/usr/share/plasma/look-and-feel" "$rootfs/etc/skel/.local/share/wallpapers" \
+    "$rootfs/usr/local/share/applications"
 cp "$project/rootfs/etc/sddm.conf.d/10-protoos-autologin.conf" "$rootfs/etc/sddm.conf.d/"
 cp "$project/branding/colors/"*.colors "$rootfs/usr/share/color-schemes/"
 cp -a "$project/branding/look-and-feel/org.protoos.desktop" "$rootfs/usr/share/plasma/look-and-feel/"
 cp -a "$project/branding/wallpapers/ProtoOS" "$rootfs/etc/skel/.local/share/wallpapers/"
 cp -a "$project/rootfs/etc/skel/." "$rootfs/etc/skel/"
+# /usr/local takes precedence over package desktop entries. Keep the package
+# binaries while presenting the concise ProtoOS roles in the application menu.
+cp -a "$project/rootfs/usr/local/share/applications/." "$rootfs/usr/local/share/applications/"
+
+# Keep the performance promise testable: the installed rootfs must carry these
+# files before a VHD is published, not merely document them in the repository.
+test -s "$rootfs/etc/skel/.config/kwinrc"
+test -s "$rootfs/etc/skel/.config/baloofilerc"
+test -s "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
+grep -Fqx 'Enabled=false' "$rootfs/etc/skel/.config/kwinrc"
+grep -Fqx 'Indexing-Enabled=false' "$rootfs/etc/skel/.config/baloofilerc"
+for launcher in org.kde.dolphin org.kde.konsole org.kde.kate org.kde.okular systemsettings; do
+    test -s "$rootfs/usr/local/share/applications/$launcher.desktop"
+done
 
 if ! chroot "$rootfs" id protoos >/dev/null 2>&1; then
     chroot "$rootfs" useradd --create-home --shell /bin/bash --groups sudo,video,audio,input protoos

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Documents
+Name[ru]=Документы
+GenericName=ProtoOS Document Viewer
+GenericName[ru]=Просмотр документов ProtoOS
+Comment=Read PDF and document files
+Comment[ru]=Чтение PDF и документов
+Exec=okular %U
+Icon=okular
+Categories=Qt;KDE;Office;Viewer;
+MimeType=application/pdf;application/epub+zip;
+StartupNotify=true

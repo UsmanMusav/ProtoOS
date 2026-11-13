@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Settings
+Name[ru]=Настройки
+GenericName=ProtoOS Settings
+GenericName[ru]=Настройки ProtoOS
+Comment=Configure the ProtoOS session
+Comment[ru]=Настройка сеанса ProtoOS
+Exec=systemsettings
+Icon=preferences-system
+Categories=Qt;KDE;Settings;
+StartupNotify=true

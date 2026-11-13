@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Text
+Name[ru]=Текст
+GenericName=ProtoOS Text Editor
+GenericName[ru]=Текстовый редактор ProtoOS
+Comment=Create and edit text files
+Comment[ru]=Создание и редактирование текстовых файлов
+Exec=kate --new
+Icon=accessories-text-editor
+Categories=Qt;KDE;Utility;TextEditor;
+StartupNotify=true

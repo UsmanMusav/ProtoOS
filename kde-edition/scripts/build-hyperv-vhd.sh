@@ -9,7 +9,7 @@ OUT=${PROTOOS_OUT_DIR:-"$ROOT/out"}
 WORK=${PROTOOS_WORK_DIR:-"$ROOT/build/kde-vhd"}
 RELEASE=${PROTOOS_DEBIAN_RELEASE:-trixie}
 VIRTUAL_SIZE=${PROTOOS_VIRTUAL_SIZE:-12G}
-VHD="$OUT/ProtoOS-KDE-0.4.0-HyperV.vhd"
+VHD="$OUT/ProtoOS-KDE-0.4.1-HyperV.vhd"
 RAW="$WORK/protoos-kde.raw"
 ROOTFS="$WORK/rootfs"
 LOOP_DEVICE=
@@ -135,10 +135,10 @@ RequiredBy=display-manager.service
 SERVICE
 
 cat > "$ROOTFS/etc/os-release" <<'OS_RELEASE'
-PRETTY_NAME="ProtoOS KDE Edition 0.4.0"
+PRETTY_NAME="ProtoOS KDE Edition 0.4.1 Aurora Performance"
 NAME="ProtoOS KDE Edition"
-VERSION_ID="0.4.0"
-VERSION="0.4.0 (Debian KDE Plasma Live)"
+VERSION_ID="0.4.1"
+VERSION="0.4.1 (Aurora Performance, Debian KDE Plasma Live)"
 ID=protoos
 ID_LIKE=debian
 HOME_URL="https://github.com/UsmanMusav/ProtoOS"

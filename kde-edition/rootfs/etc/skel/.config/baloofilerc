@@ -1,0 +1,4 @@
+# File-content indexing is expensive and brings little value to an ephemeral
+# Hyper-V Live session. Users can opt in later from the desktop settings.
+[Basic Settings]
+Indexing-Enabled=false
