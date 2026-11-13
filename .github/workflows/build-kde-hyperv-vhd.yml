@@ -84,7 +84,7 @@ jobs:
           gh release create "$RELEASE_TAG" \
             --target "$GITHUB_SHA" \
             --title "ProtoOS KDE Edition 0.4.4 Aurora Welcome Preview 1" \
-            --notes "Debian Trixie KDE Plasma Live preview for Hyper-V Generation 2. Adds the new Get Started guide, predictable Documents/Downloads/Pictures folders, original Aurora icons for common tasks, and screenshot, image-viewing and archive tools. Proton Browser 5.1.0 remains included from its SHA-256-pinned official GitHub asset. Aurora Motion remains enabled; blur and heavy 3D effects remain disabled. Press Alt+Shift+F12 to disable compositing if another VM becomes slow. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
+            --notes "Debian Trixie KDE Plasma Live preview for Hyper-V Generation 2. Adds the new Get Started guide, predictable Documents/Downloads/Pictures folders, original Aurora icons for common tasks, and image-viewing and archive tools. Proton Browser 5.1.0 remains included from its SHA-256-pinned official GitHub asset. Aurora Motion remains enabled; blur and heavy 3D effects remain disabled. Press Alt+Shift+F12 to disable compositing if another VM becomes slow. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
             --prerelease \
             release/ProtoOS-KDE-0.4.4-HyperV.vhd.xz \
             release/ProtoOS-KDE-0.4.4-HyperV.vhd.xz.sha256 \

@@ -27,7 +27,7 @@ immutability=1
 plugin=org.kde.plasma.kickoff
 
 [Containments][2][Applets][3][Configuration][General]
-favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.spectacle.desktop,applications:systemsettings.desktop
+favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.gwenview.desktop,applications:systemsettings.desktop
 
 [Containments][2][Applets][4]
 immutability=1
@@ -67,7 +67,7 @@ immutability=1
 plugin=org.kde.plasma.icontasks
 
 [Containments][3][Applets][8][Configuration][General]
-launchers=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.okular.desktop,applications:org.kde.spectacle.desktop,applications:systemsettings.desktop
+launchers=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.okular.desktop,applications:org.kde.gwenview.desktop,applications:systemsettings.desktop
 showOnlyCurrentDesktop=false
 showOnlyCurrentScreen=false
 showOnlyMinimized=false

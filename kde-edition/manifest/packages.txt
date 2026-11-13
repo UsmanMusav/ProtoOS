@@ -18,7 +18,6 @@ konsole
 dolphin
 ark
 gwenview
-spectacle
 kdialog
 kate
 okular

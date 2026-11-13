@@ -14,7 +14,6 @@ case "${LANG:-${LC_MESSAGES:-}}" in
         browser='Открыть браузер Proton'
         files='Открыть файлы'
         documents='Открыть папку «Документы»'
-        screenshot='Сделать снимок экрана'
         network='Настроить сеть'
         appearance='Настроить внешний вид'
         shortcuts='Горячие клавиши'
@@ -28,7 +27,6 @@ case "${LANG:-${LC_MESSAGES:-}}" in
         browser='Open Proton Browser'
         files='Open Files'
         documents='Open Documents folder'
-        screenshot='Take a screenshot'
         network='Set up network'
         appearance='Personalize appearance'
         shortcuts='Keyboard shortcuts'
@@ -43,7 +41,6 @@ while :; do
         browser "$browser" \
         files "$files" \
         documents "$documents" \
-        screenshot "$screenshot" \
         network "$network" \
         appearance "$appearance" \
         shortcuts "$shortcuts" \
@@ -56,7 +53,6 @@ while :; do
             mkdir -p "$HOME/Documents"
             exec dolphin "$HOME/Documents"
             ;;
-        screenshot) exec spectacle --gui ;;
         network) exec systemsettings kcm_networkmanagement ;;
         appearance) exec systemsettings kcm_colors ;;
         shortcuts) kdialog --title "$title" --icon protoos-welcome --msgbox "$shortcuts_text" ;;

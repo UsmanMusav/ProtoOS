@@ -90,8 +90,8 @@ grep -Fqx 'Enabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'fadeEnabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'Indexing-Enabled=false' "$rootfs/etc/skel/.config/baloofilerc"
 for launcher in org.protoos.welcome org.protoos.proton org.kde.dolphin \
-    org.kde.konsole org.kde.kate org.kde.okular org.kde.spectacle \
-    org.kde.gwenview org.kde.ark systemsettings; do
+    org.kde.konsole org.kde.kate org.kde.okular org.kde.gwenview \
+    org.kde.ark systemsettings; do
     test -s "$rootfs/usr/local/share/applications/$launcher.desktop"
 done
 test -x "$rootfs/usr/local/bin/protoos-welcome"
@@ -100,10 +100,10 @@ for folder in Desktop Documents Downloads Pictures Music Videos Public Templates
     test -d "$rootfs/etc/skel/$folder"
 done
 test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/index.theme"
-for icon in protoos-proton protoos-welcome protoos-capture protoos-images protoos-archive; do
+for icon in protoos-proton protoos-welcome protoos-images protoos-archive; do
     test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/$icon.svg"
 done
-for command in kdialog spectacle gwenview ark; do
+for command in kdialog gwenview ark; do
     chroot "$rootfs" /bin/sh -eu -c "command -v $command"
 done
 if [ "$proton_required" = 1 ]; then
