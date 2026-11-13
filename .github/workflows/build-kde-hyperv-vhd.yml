@@ -1,0 +1,112 @@
+name: Build ProtoOS KDE Hyper-V VHD
+
+on:
+  # This branch trigger starts the first real image build before the workflow
+  # reaches main. Manual dispatch remains available after the PR is merged.
+  push:
+    branches:
+      - arena/285b75c2-protoos
+  workflow_dispatch:
+    inputs:
+      debian_release:
+        description: Debian suite used for the KDE rootfs
+        required: true
+        default: trixie
+        type: choice
+        options:
+          - trixie
+          - bookworm
+      virtual_size:
+        description: Virtual disk size exposed to Hyper-V
+        required: true
+        default: 12G
+        type: string
+      publish_release:
+        description: Publish a compressed Preview VHD asset to GitHub Releases
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build:
+    name: Debian KDE Plasma VHD
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out ProtoOS
+        uses: actions/checkout@v4
+
+      - name: Build dynamic Hyper-V VHD
+        env:
+          PROTOOS_DEBIAN_RELEASE: ${{ inputs.debian_release }}
+          PROTOOS_VIRTUAL_SIZE: ${{ inputs.virtual_size }}
+          PROTOOS_OUT_DIR: ${{ github.workspace }}/release
+          PROTOOS_WORK_DIR: ${{ runner.temp }}/protoos-kde-work
+        run: |
+          set -o pipefail
+          sudo --preserve-env=PROTOOS_DEBIAN_RELEASE,PROTOOS_VIRTUAL_SIZE,PROTOOS_OUT_DIR,PROTOOS_WORK_DIR ./kde-edition/scripts/build-hyperv-vhd.sh 2>&1 | tee "${RUNNER_TEMP}/protoos-kde-build.log"
+
+      - name: Publish VHD for Hyper-V testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProtoOS-KDE-HyperV-${{ inputs.debian_release || 'trixie' }}
+          path: |
+            release/ProtoOS-KDE-0.4.0-HyperV.vhd
+            release/ProtoOS-KDE-0.4.0-HyperV.vhd.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      # GitHub Release assets are limited in size. Compressing the sparse-style
+      # dynamic VHD makes a single, browser-downloadable preview asset possible.
+      - name: Compress VHD for GitHub Release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
+        run: |
+          set -o pipefail
+          # The builder runs under sudo, so take ownership before producing the
+          # release-side compressed file as the unprivileged Actions runner.
+          sudo chown -R "$(id -u):$(id -g)" release
+          VHD=release/ProtoOS-KDE-0.4.0-HyperV.vhd
+          xz --threads=0 --compress --keep --force --verbose "$VHD" 2>&1 | tee "${RUNNER_TEMP}/protoos-kde-release.log"
+          sha256sum "$VHD.xz" > "$VHD.xz.sha256"
+
+      - name: Publish Preview release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v0.4.0-kde-preview.4
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" \
+            --target "$GITHUB_SHA" \
+            --title "ProtoOS KDE Edition 0.4.0 Preview 4" \
+            --notes "Debian Trixie KDE Plasma Live preview for Hyper-V Generation 2. Preview 4 flushes and unmounts the filesystem before VHD conversion, so the EFI GRUB bootstrap and root boot menu are committed to the published disk. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
+            --prerelease \
+            release/ProtoOS-KDE-0.4.0-HyperV.vhd.xz \
+            release/ProtoOS-KDE-0.4.0-HyperV.vhd.xz.sha256 \
+            release/ProtoOS-KDE-0.4.0-HyperV.vhd.sha256
+
+      - name: Publish failure diagnostics
+        if: ${{ failure() }}
+        uses: actions/github-script@v7
+        env:
+          BUILD_LOG: ${{ runner.temp }}/protoos-kde-build.log
+          RELEASE_LOG: ${{ runner.temp }}/protoos-kde-release.log
+        with:
+          script: |
+            const fs = require('fs');
+            const paths = [process.env.BUILD_LOG, process.env.RELEASE_LOG];
+            const logs = paths.filter(fs.existsSync).map((path) =>
+              `=== ${path.split('/').pop()} ===\n` +
+              fs.readFileSync(path, 'utf8').split('\n').slice(-80).join('\n')
+            ).join('\n\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1,
+              body: `KDE VHD build or release failed. Last log lines:\n\n\`\`\`text\n${logs || 'No log was created.'}\n\`\`\``
+            });

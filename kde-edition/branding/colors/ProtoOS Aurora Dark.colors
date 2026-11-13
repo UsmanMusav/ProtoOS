@@ -1,0 +1,32 @@
+[General]
+Name=ProtoOS Aurora Dark
+ColorScheme=ProtoOS Aurora Dark
+shadeSortColumn=true
+
+[Colors:Window]
+BackgroundNormal=24,27,42
+ForegroundNormal=239,243,255
+ForegroundInactive=166,176,205
+DecorationFocus=113,126,255
+DecorationHover=165,113,255
+
+[Colors:View]
+BackgroundNormal=31,35,52
+ForegroundNormal=239,243,255
+ForegroundInactive=166,176,205
+
+[Colors:Selection]
+BackgroundNormal=88,102,228
+ForegroundNormal=255,255,255
+
+[Colors:Button]
+BackgroundNormal=40,45,68
+ForegroundNormal=239,243,255
+
+[WM]
+activeBackground=37,44,72
+activeBlend=77,88,158
+activeForeground=244,247,255
+inactiveBackground=31,35,52
+inactiveBlend=45,50,78
+inactiveForeground=182,190,214

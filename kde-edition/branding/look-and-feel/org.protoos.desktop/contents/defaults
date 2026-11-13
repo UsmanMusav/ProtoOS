@@ -1,0 +1,14 @@
+[General]
+ColorScheme=ProtoOS Aurora Dark
+
+[KSplash]
+Theme=org.kde.breeze.desktop
+
+[WM]
+activeBackground=37,44,72
+activeForeground=244,247,255
+inactiveBackground=31,35,52
+inactiveForeground=182,190,214
+
+[Windows]
+BorderlessMaximizedWindows=true
