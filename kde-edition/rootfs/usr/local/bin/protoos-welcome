@@ -12,9 +12,11 @@ case "${LANG:-${LC_MESSAGES:-}}" in
         title='Добро пожаловать в ProtoOS'
         prompt='Выберите, с чего хотите начать. Этот помощник всегда доступен в панели приложений.'
         browser='Открыть браузер Proton'
+        computer='Открыть «Этот компьютер»'
         files='Открыть файлы'
         documents='Открыть папку «Документы»'
         calculator='Открыть калькулятор'
+        monitor='Открыть диспетчер задач'
         network='Настроить сеть'
         appearance='Настроить внешний вид'
         motion='Настроить эффекты окон'
@@ -27,9 +29,11 @@ case "${LANG:-${LC_MESSAGES:-}}" in
         title='Welcome to ProtoOS'
         prompt='Choose a starting point. This helper is always available from the application panel.'
         browser='Open Proton Browser'
+        computer='Open This PC'
         files='Open Files'
         documents='Open Documents folder'
         calculator='Open Calculator'
+        monitor='Open System Monitor'
         network='Set up network'
         appearance='Personalize appearance'
         motion='Adjust window effects'
@@ -43,9 +47,11 @@ esac
 while :; do
     choice=$(kdialog --title "$title" --icon protoos-welcome --menu "$prompt" \
         browser "$browser" \
+        computer "$computer" \
         files "$files" \
         documents "$documents" \
         calculator "$calculator" \
+        monitor "$monitor" \
         network "$network" \
         appearance "$appearance" \
         motion "$motion" \
@@ -54,12 +60,14 @@ while :; do
 
     case "$choice" in
         browser) exec proton about:blank ;;
+        computer) exec dolphin computer:/ ;;
         files) exec dolphin "$HOME" ;;
         documents)
             mkdir -p "$HOME/Documents"
             exec dolphin "$HOME/Documents"
             ;;
         calculator) exec kcalc ;;
+        monitor) exec plasma-systemmonitor ;;
         network) exec systemsettings kcm_networkmanagement ;;
         appearance) exec systemsettings kcm_colors ;;
         motion) exec systemsettings kcm_kwin_effects ;;

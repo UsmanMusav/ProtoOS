@@ -31,7 +31,7 @@ plugin=org.kde.plasma.kickoff
 # obvious, instead of presenting an unlabelled stock Plasma launcher.
 icon=protoos-home
 menuLabel=Home
-favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.gwenview.desktop,applications:org.kde.kcalc.desktop,applications:systemsettings.desktop
+favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.protoos.computer.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.gwenview.desktop,applications:org.kde.kcalc.desktop,applications:org.protoos.monitor.desktop,applications:systemsettings.desktop
 appNameFormat=0
 favoritesDisplay=0
 applicationsDisplay=0

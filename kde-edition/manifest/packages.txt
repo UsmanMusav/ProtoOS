@@ -10,6 +10,7 @@ plasma-desktop
 plasma-workspace
 plasma-nm
 plasma-pa
+plasma-systemmonitor
 powerdevil
 kde-config-sddm
 

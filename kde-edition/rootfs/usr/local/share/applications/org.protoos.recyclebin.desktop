@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Recycle Bin
+Name[ru]=Корзина
+GenericName=ProtoOS Recycle Bin
+GenericName[ru]=Корзина ProtoOS
+Comment=View and restore deleted files
+Comment[ru]=Просмотр и восстановление удалённых файлов
+Exec=dolphin trash:/
+Icon=protoos-recycle
+Categories=Qt;KDE;System;Utility;FileManager;
+StartupNotify=true

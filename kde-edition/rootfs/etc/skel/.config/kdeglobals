@@ -10,7 +10,7 @@ Theme=ProtoOS-Aurora
 # Proton Flow makes each state change visible but keeps it short. Users who
 # prefer reduced motion can set this to 0 in System Settings; Alt+Shift+F12
 # remains an instant compositor toggle for a constrained VM.
-AnimationDurationFactor=0.60
+AnimationDurationFactor=0.85
 LookAndFeelPackage=org.protoos.desktop
 SingleClick=false
 

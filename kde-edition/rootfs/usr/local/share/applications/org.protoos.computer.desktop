@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=This PC
+Name[ru]=Этот компьютер
+GenericName=ProtoOS Devices and Drives
+GenericName[ru]=Устройства и диски ProtoOS
+Comment=Browse drives, devices and network locations
+Comment[ru]=Диски, устройства и сетевые расположения
+Exec=dolphin computer:/
+Icon=protoos-computer
+Categories=Qt;KDE;System;Utility;FileManager;
+StartupNotify=true

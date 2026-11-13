@@ -94,9 +94,10 @@ grep -Fqx 'icon=protoos-home' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.de
 grep -Fqx 'menuLabel=Home' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
 grep -Fqx 'Name=ProtoOS Proton Dark' "$rootfs/usr/share/color-schemes/ProtoOS Aurora Dark.colors"
 grep -Fqx 'Name=ProtoOS Proton Light' "$rootfs/usr/share/color-schemes/ProtoOS Aurora Light.colors"
-for launcher in org.protoos.welcome org.protoos.proton org.kde.dolphin \
-    org.kde.konsole org.kde.kate org.kde.okular org.kde.gwenview \
-    org.kde.ark org.kde.kcalc systemsettings; do
+for launcher in org.protoos.welcome org.protoos.proton org.protoos.computer \
+    org.protoos.recyclebin org.protoos.monitor org.kde.dolphin org.kde.konsole \
+    org.kde.kate org.kde.okular org.kde.gwenview org.kde.ark org.kde.kcalc \
+    systemsettings; do
     test -s "$rootfs/usr/local/share/applications/$launcher.desktop"
 done
 test -x "$rootfs/usr/local/bin/protoos-welcome"
@@ -110,10 +111,11 @@ grep -Fqx 'Inherits=breeze-dark,breeze,hicolor' "$rootfs/usr/share/icons/ProtoOS
 test -s "$rootfs/usr/share/icons/breeze-dark/index.theme"
 test -s "$rootfs/usr/share/icons/breeze/index.theme"
 test -s "$rootfs/usr/share/icons/hicolor/index.theme"
-for icon in protoos-home protoos-proton protoos-welcome protoos-images protoos-archive protoos-calculator; do
+for icon in protoos-home protoos-proton protoos-welcome protoos-images protoos-archive \
+    protoos-calculator protoos-computer protoos-monitor protoos-recycle; do
     test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/$icon.svg"
 done
-for command in kdialog gwenview ark kcalc; do
+for command in kdialog gwenview ark kcalc plasma-systemmonitor; do
     chroot "$rootfs" /bin/sh -eu -c "command -v $command"
 done
 if [ "$proton_required" = 1 ]; then

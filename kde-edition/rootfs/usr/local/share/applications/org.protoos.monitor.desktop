@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=System Monitor
+Name[ru]=Диспетчер задач
+GenericName=ProtoOS System Monitor
+GenericName[ru]=Программы, процессы и нагрузка
+Comment=See running apps, processes and resource usage
+Comment[ru]=Запущенные программы, процессы и нагрузка системы
+Exec=plasma-systemmonitor
+Icon=protoos-monitor
+Categories=Qt;KDE;System;Monitor;
+StartupNotify=true
