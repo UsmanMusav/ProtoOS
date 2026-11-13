@@ -18,7 +18,9 @@ konsole
 dolphin
 ark
 gwenview
+kcalc
 kdialog
+kio-extras
 kate
 okular
 systemsettings

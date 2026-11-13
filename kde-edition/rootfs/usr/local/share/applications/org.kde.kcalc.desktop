@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Calculator
+Name[ru]=Калькулятор
+GenericName=ProtoOS Calculator
+GenericName[ru]=Калькулятор ProtoOS
+Comment=Calculate everyday values
+Comment[ru]=Быстрые повседневные вычисления
+Exec=kcalc
+Icon=protoos-calculator
+Categories=Qt;KDE;Utility;Calculator;
+StartupNotify=true

@@ -35,5 +35,11 @@ fallapartEnabled=false
 magiclampEnabled=false
 wobblywindowsEnabled=false
 
+[org.kde.kdecoration2]
+# Familiar left-side window controls, while retaining ProtoOS colors and the
+# standard Plasma accessibility semantics instead of copying Apple artwork.
+ButtonsOnLeft=XIA
+ButtonsOnRight=
+
 [Windows]
 RollOverDesktops=false

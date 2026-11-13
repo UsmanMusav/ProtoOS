@@ -16,7 +16,7 @@ PROTON_VERSION=5.1.0
 PROTON_DEB_NAME=iskatel-linux-amd64.deb
 PROTON_DEB_URL="https://github.com/UsmanMusav/Proton-updates/releases/download/v${PROTON_VERSION}/${PROTON_DEB_NAME}"
 PROTON_DEB_SHA256=e7a9c505ec626df0f991450beef7acf8ce6fc3f27f66a01220e9fb1bf0d4fb81
-VHD="$OUT/ProtoOS-KDE-0.4.6-HyperV.vhd"
+VHD="$OUT/ProtoOS-KDE-0.4.7-HyperV.vhd"
 RAW="$WORK/protoos-kde.raw"
 ROOTFS="$WORK/rootfs"
 LOOP_DEVICE=
@@ -87,6 +87,9 @@ done
 cat > "$ROOTFS/tmp/protoos-base-packages.txt" <<'PACKAGES'
 linux-image-amd64
 initramfs-tools
+# Root fs checking must be present both in the root filesystem and the initrd.
+# Without this, systemd waits for a failing fsck.ext4 job before Plasma starts.
+e2fsprogs
 grub-efi-amd64
 grub-efi-amd64-bin
 efibootmgr
@@ -99,6 +102,9 @@ chroot "$ROOTFS" /bin/sh -eu -c '
     xargs apt-get install -y --no-install-recommends < /tmp/protoos-base-packages.txt
     rm -f /tmp/protoos-base-packages.txt
 '
+# Catch a missing root checker during the build, rather than publishing a VHD
+# that pauses at boot with "fsck.ext4 ... exit status code 8".
+chroot "$ROOTFS" /bin/sh -eu -c 'command -v fsck.ext4'
 
 # Fetch the browser only from the release URL specified above, then verify its
 # GitHub-provided SHA-256 before its package maintainer scripts can run.
@@ -150,10 +156,10 @@ RequiredBy=display-manager.service
 SERVICE
 
 cat > "$ROOTFS/etc/os-release" <<'OS_RELEASE'
-PRETTY_NAME="ProtoOS KDE Edition 0.4.6 Clear Controls"
+PRETTY_NAME="ProtoOS KDE Edition 0.4.7 Foundation"
 NAME="ProtoOS KDE Edition"
-VERSION_ID="0.4.6"
-VERSION="0.4.6 (Proton Flow with Clear Controls, Debian KDE Plasma Live)"
+VERSION_ID="0.4.7"
+VERSION="0.4.7 (Reliable boot and desktop foundation, Debian KDE Plasma Live)"
 ID=protoos
 ID_LIKE=debian
 HOME_URL="https://github.com/UsmanMusav/ProtoOS"
@@ -173,6 +179,12 @@ chroot "$ROOTFS" /bin/sh -eu -c '
     systemctl set-default graphical.target
     grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ProtoOS --removable --no-nvram
     update-initramfs -u -k all
+    # The checker is required in the initrd for the ext4 root fs pass in fstab.
+    # Keep this as a release gate: the old omission delayed every boot by a
+    # failed fsck job even though the filesystem was otherwise mountable.
+    for initrd in /boot/initrd.img-*; do
+        lsinitramfs "$initrd" | grep -Eq "(^|/)fsck\\.ext4$"
+    done
     update-grub
     # Hyper-V boots the removable-media fallback path. Embed a minimal loader
     # config so the executable does not depend on a prefix inferred in chroot.

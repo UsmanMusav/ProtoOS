@@ -31,7 +31,7 @@ plugin=org.kde.plasma.kickoff
 # obvious, instead of presenting an unlabelled stock Plasma launcher.
 icon=protoos-home
 menuLabel=Home
-favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.gwenview.desktop,applications:systemsettings.desktop
+favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.gwenview.desktop,applications:org.kde.kcalc.desktop,applications:systemsettings.desktop
 appNameFormat=0
 favoritesDisplay=0
 applicationsDisplay=0
@@ -58,8 +58,12 @@ immutability=1
 plugin=org.kde.plasma.systemtray
 
 [Containments][2][General]
+# A full-width translucent menu bar anchors Home, time and system controls.
 AppletOrder=3;4;5;6
-thickness=32
+floating=0
+panelLengthMode=0
+panelOpacity=2
+thickness=30
 
 [Containments][3]
 activityId=
@@ -89,5 +93,11 @@ immutability=1
 plugin=org.kde.plasma.panelspacer
 
 [Containments][3][General]
-AppletOrder=7;8;9
-thickness=48
+# A centered, content-sized floating dock gives fast app switching a familiar
+# macOS-like shape while keeping the visual identity completely ProtoOS.
+AppletOrder=8
+alignment=4
+floating=1
+panelLengthMode=1
+panelOpacity=2
+thickness=52
