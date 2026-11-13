@@ -73,7 +73,7 @@ cp -a "$project/rootfs/etc/skel/." "$rootfs/etc/skel/"
 # binaries while presenting the concise ProtoOS roles in the application menu.
 cp -a "$project/rootfs/usr/local/share/applications/." "$rootfs/usr/local/share/applications/"
 cp -a "$project/rootfs/usr/local/bin/." "$rootfs/usr/local/bin/"
-chmod 0755 "$rootfs/usr/local/bin/protoos-welcome"
+chmod 0755 "$rootfs/usr/local/bin/protoos-welcome" "$rootfs/usr/local/bin/protoos-settings"
 # The Live-home service copies /etc/skel on every boot, so create visible,
 # predictable folders there rather than only in the builder's temporary user.
 install -d "$rootfs/etc/skel/Desktop" "$rootfs/etc/skel/Documents" \
@@ -90,6 +90,8 @@ grep -Fqx 'Enabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'fadeEnabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'Indexing-Enabled=false' "$rootfs/etc/skel/.config/baloofilerc"
 grep -Fqx 'ColorScheme=ProtoOS Proton Dark' "$rootfs/etc/skel/.config/kdeglobals"
+grep -Fqx 'icon=protoos-home' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
+grep -Fqx 'menuLabel=Home' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
 grep -Fqx 'Name=ProtoOS Proton Dark' "$rootfs/usr/share/color-schemes/ProtoOS Aurora Dark.colors"
 grep -Fqx 'Name=ProtoOS Proton Light' "$rootfs/usr/share/color-schemes/ProtoOS Aurora Light.colors"
 for launcher in org.protoos.welcome org.protoos.proton org.kde.dolphin \
@@ -98,6 +100,7 @@ for launcher in org.protoos.welcome org.protoos.proton org.kde.dolphin \
     test -s "$rootfs/usr/local/share/applications/$launcher.desktop"
 done
 test -x "$rootfs/usr/local/bin/protoos-welcome"
+test -x "$rootfs/usr/local/bin/protoos-settings"
 test -s "$rootfs/etc/skel/.config/user-dirs.dirs"
 for folder in Desktop Documents Downloads Pictures Music Videos Public Templates; do
     test -d "$rootfs/etc/skel/$folder"
@@ -107,7 +110,7 @@ grep -Fqx 'Inherits=breeze-dark,breeze,hicolor' "$rootfs/usr/share/icons/ProtoOS
 test -s "$rootfs/usr/share/icons/breeze-dark/index.theme"
 test -s "$rootfs/usr/share/icons/breeze/index.theme"
 test -s "$rootfs/usr/share/icons/hicolor/index.theme"
-for icon in protoos-proton protoos-welcome protoos-images protoos-archive; do
+for icon in protoos-home protoos-proton protoos-welcome protoos-images protoos-archive; do
     test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/$icon.svg"
 done
 for command in kdialog gwenview ark; do

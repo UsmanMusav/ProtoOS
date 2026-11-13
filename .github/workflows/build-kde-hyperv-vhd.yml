@@ -55,8 +55,8 @@ jobs:
         with:
           name: ProtoOS-KDE-HyperV-${{ inputs.debian_release || 'trixie' }}
           path: |
-            release/ProtoOS-KDE-0.4.5-HyperV.vhd
-            release/ProtoOS-KDE-0.4.5-HyperV.vhd.sha256
+            release/ProtoOS-KDE-0.4.6-HyperV.vhd
+            release/ProtoOS-KDE-0.4.6-HyperV.vhd.sha256
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
@@ -70,7 +70,7 @@ jobs:
           # The builder runs under sudo, so take ownership before producing the
           # release-side compressed file as the unprivileged Actions runner.
           sudo chown -R "$(id -u):$(id -g)" release
-          VHD=release/ProtoOS-KDE-0.4.5-HyperV.vhd
+          VHD=release/ProtoOS-KDE-0.4.6-HyperV.vhd
           xz --threads=0 --compress --keep --force --verbose "$VHD" 2>&1 | tee "${RUNNER_TEMP}/protoos-kde-release.log"
           sha256sum "$VHD.xz" > "$VHD.xz.sha256"
 
@@ -78,17 +78,17 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: v0.4.5-proton-flow-preview.1
+          RELEASE_TAG: v0.4.6-home-settings-preview.1
         run: |
           set -euo pipefail
           gh release create "$RELEASE_TAG" \
             --target "$GITHUB_SHA" \
-            --title "ProtoOS KDE Edition 0.4.5 Proton Flow Preview 1" \
-            --notes "Debian Trixie KDE Plasma Live preview for Hyper-V Generation 2. Fixes incomplete icon-theme fallback by inheriting Breeze and hicolor, applies the new ProtoOS Proton Dark/Light palette, and expands Aurora Motion with short transitions for dialogs, overview, desktop grid, workspace changes, popups, tiling and startup feedback. Heavy blur, 3D cube and wobbly windows remain disabled. Proton Browser 5.1.0 remains included from its SHA-256-pinned official GitHub asset. Press Alt+Shift+F12 to disable compositing or use Get Started → Adjust window effects if another VM becomes slow. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
+            --title "ProtoOS KDE Edition 0.4.6 Home & Settings Preview 1" \
+            --notes "Debian Trixie KDE Plasma Live preview for Hyper-V Generation 2. Replaces the unlabelled stock launcher with a branded Home button and clear text label, and turns Settings into a simple front door for network, appearance, window effects and the complete system settings. Keeps Proton Flow, complete icon fallback and the Aurora Motion profile from 0.4.5. Proton Browser 5.1.0 remains included from its SHA-256-pinned official GitHub asset. Press Alt+Shift+F12 to disable compositing if another VM becomes slow. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
             --prerelease \
-            release/ProtoOS-KDE-0.4.5-HyperV.vhd.xz \
-            release/ProtoOS-KDE-0.4.5-HyperV.vhd.xz.sha256 \
-            release/ProtoOS-KDE-0.4.5-HyperV.vhd.sha256
+            release/ProtoOS-KDE-0.4.6-HyperV.vhd.xz \
+            release/ProtoOS-KDE-0.4.6-HyperV.vhd.xz.sha256 \
+            release/ProtoOS-KDE-0.4.6-HyperV.vhd.sha256
 
       - name: Publish failure diagnostics
         if: ${{ failure() }}

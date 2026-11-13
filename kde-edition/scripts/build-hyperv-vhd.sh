@@ -16,7 +16,7 @@ PROTON_VERSION=5.1.0
 PROTON_DEB_NAME=iskatel-linux-amd64.deb
 PROTON_DEB_URL="https://github.com/UsmanMusav/Proton-updates/releases/download/v${PROTON_VERSION}/${PROTON_DEB_NAME}"
 PROTON_DEB_SHA256=e7a9c505ec626df0f991450beef7acf8ce6fc3f27f66a01220e9fb1bf0d4fb81
-VHD="$OUT/ProtoOS-KDE-0.4.5-HyperV.vhd"
+VHD="$OUT/ProtoOS-KDE-0.4.6-HyperV.vhd"
 RAW="$WORK/protoos-kde.raw"
 ROOTFS="$WORK/rootfs"
 LOOP_DEVICE=
@@ -150,10 +150,10 @@ RequiredBy=display-manager.service
 SERVICE
 
 cat > "$ROOTFS/etc/os-release" <<'OS_RELEASE'
-PRETTY_NAME="ProtoOS KDE Edition 0.4.5 Proton Flow"
+PRETTY_NAME="ProtoOS KDE Edition 0.4.6 Clear Controls"
 NAME="ProtoOS KDE Edition"
-VERSION_ID="0.4.5"
-VERSION="0.4.5 (Proton Flow with Aurora Motion, Debian KDE Plasma Live)"
+VERSION_ID="0.4.6"
+VERSION="0.4.6 (Proton Flow with Clear Controls, Debian KDE Plasma Live)"
 ID=protoos
 ID_LIKE=debian
 HOME_URL="https://github.com/UsmanMusav/ProtoOS"

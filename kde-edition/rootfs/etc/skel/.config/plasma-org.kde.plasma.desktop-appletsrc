@@ -27,7 +27,19 @@ immutability=1
 plugin=org.kde.plasma.kickoff
 
 [Containments][2][Applets][3][Configuration][General]
+# A named Home button and a familiar house icon make the primary navigation
+# obvious, instead of presenting an unlabelled stock Plasma launcher.
+icon=protoos-home
+menuLabel=Home
 favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.gwenview.desktop,applications:systemsettings.desktop
+appNameFormat=0
+favoritesDisplay=0
+applicationsDisplay=0
+alphaSort=true
+compactMode=false
+highlightNewlyInstalledApps=false
+switchCategoryOnHover=false
+showActionButtonCaptions=true
 
 [Containments][2][Applets][4]
 immutability=1

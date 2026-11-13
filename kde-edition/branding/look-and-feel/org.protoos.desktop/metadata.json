@@ -3,7 +3,7 @@
     "Id": "org.protoos.desktop",
     "Name": "ProtoOS Aurora",
     "Description": "The default desktop appearance for ProtoOS KDE Edition",
-    "Version": "0.4.5",
+    "Version": "0.4.6",
     "License": "GPL-3.0-or-later",
     "Authors": [
       {"Name": "ProtoOS contributors"}

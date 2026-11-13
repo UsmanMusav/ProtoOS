@@ -1,0 +1,39 @@
+#!/bin/sh
+# A clear, small front door to the settings people need most in a Live session.
+set -u
+
+if ! command -v kdialog >/dev/null 2>&1; then
+    exec systemsettings
+fi
+
+case "${LANG:-${LC_MESSAGES:-}}" in
+    ru*|RU*)
+        title='Настройки ProtoOS'
+        prompt='Быстрый доступ к часто используемым настройкам. Полный список всегда доступен в «Все системные настройки».'
+        network='Сеть и интернет'
+        appearance='Оформление и цвета'
+        motion='Эффекты и анимации окон'
+        all='Все системные настройки'
+        ;;
+    *)
+        title='ProtoOS Settings'
+        prompt='Quick access to common settings. The complete list is always available from All System Settings.'
+        network='Network and internet'
+        appearance='Appearance and colors'
+        motion='Window effects and animations'
+        all='All System Settings'
+        ;;
+esac
+
+choice=$(kdialog --title "$title" --icon protoos-settings --menu "$prompt" \
+    network "$network" \
+    appearance "$appearance" \
+    motion "$motion" \
+    all "$all") || exit 0
+
+case "$choice" in
+    network) exec systemsettings kcm_networkmanagement ;;
+    appearance) exec systemsettings kcm_colors ;;
+    motion) exec systemsettings kcm_kwin_effects ;;
+    all) exec systemsettings ;;
+esac

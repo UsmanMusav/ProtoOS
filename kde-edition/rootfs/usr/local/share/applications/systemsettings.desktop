@@ -2,11 +2,11 @@
 Type=Application
 Name=Settings
 Name[ru]=Настройки
-GenericName=ProtoOS Settings
-GenericName[ru]=Настройки ProtoOS
-Comment=Configure the ProtoOS session
-Comment[ru]=Настройка сеанса ProtoOS
-Exec=systemsettings
+GenericName=ProtoOS Quick Settings
+GenericName[ru]=Сеть, оформление и эффекты
+Comment=Open common settings or all system controls
+Comment[ru]=Сеть, оформление, эффекты и все настройки системы
+Exec=protoos-settings
 Icon=protoos-settings
 Categories=Qt;KDE;Settings;
 StartupNotify=true
