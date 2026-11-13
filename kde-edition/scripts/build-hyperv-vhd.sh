@@ -207,7 +207,8 @@ LOOP_DEVICE=
 # qemu-img writes a standards-compliant dynamic VHD that Hyper-V can attach to
 # a SCSI controller. No sparse files are committed to Git; CI publishes it.
 qemu-img convert -p -f raw -O vpc -o subformat=dynamic "$RAW" "$VHD"
-qemu-img check "$VHD"
+# qemu-img check is not implemented for the VPC/VHD format; `info` verifies
+# that conversion produced the expected virtual disk instead.
 qemu-img info "$VHD"
 sha256sum "$VHD" | tee "$VHD.sha256"
 echo "Built $VHD"
