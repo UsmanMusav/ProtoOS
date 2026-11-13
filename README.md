@@ -60,4 +60,4 @@ make check-vhd
 
 ## Ограничения
 
-Только Hyper-V Generation 2 и x86_64 UEFI; Secure Boot, сеть и сохранение данных пока не поддерживаются. Графическая **ProtoOS KDE Edition** подготовлена как отдельный Debian/KDE проект в [`kde-edition/`](kde-edition/); для неё ещё не опубликован VHD, пока не получен проверяемый Debian rootfs. Старые ISO и VHD 0.2.x — устаревшие диагностические варианты.
+Только Hyper-V Generation 2 и x86_64 UEFI; Secure Boot, сеть и сохранение данных пока не поддерживаются. Графическая **ProtoOS KDE Edition** развивается как отдельный Debian/KDE проект в [`kde-edition/`](kde-edition/); актуальные тестовые VHD доступны на [странице релизов](https://github.com/UsmanMusav/ProtoOS/releases). Выбранное направление интерфейса и требования к отзывчивости Hyper-V описаны в [`kde-edition/DESIGN_DIRECTION.md`](kde-edition/DESIGN_DIRECTION.md). Старые ISO и VHD 0.2.x — устаревшие диагностические варианты.
