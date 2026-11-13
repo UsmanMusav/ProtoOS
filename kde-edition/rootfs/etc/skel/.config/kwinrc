@@ -1,10 +1,25 @@
-# ProtoOS Aurora Performance: Hyper-V uses a software-rendered Plasma desktop.
-# Preserve fast input and window movement by avoiding an always-running scene.
+# ProtoOS Aurora Motion: polished, restrained KWin effects for a Hyper-V VM
+# with adequate memory. Avoid blur and 3D novelty effects; they cost more than
+# they add to the Aurora visual language.
 [Compositing]
-AnimationSpeed=0
-Backend=QPainter
-Enabled=false
-OpenGLIsUnsafe=true
+AnimationSpeed=3
+Backend=OpenGL
+Enabled=true
+OpenGLIsUnsafe=false
+
+[Plugins]
+blurEnabled=false
+cubeEnabled=false
+cubeslideEnabled=false
+fadeEnabled=true
+loginEnabled=true
+magiclampEnabled=false
+maximizeEnabled=true
+scaleEnabled=true
+slidingpopupsEnabled=true
+translucencyEnabled=true
+windowapertureEnabled=true
+wobblywindowsEnabled=false
 
 [Windows]
 RollOverDesktops=false
