@@ -84,11 +84,11 @@ for fs in dev dev/pts proc sys run; do
 done
 
 # Install the packages that turn the rootfs into a bootable Plasma desktop.
+# Root fs checking must be present both in the root filesystem and the initrd.
+# Without it, systemd waits for a failing fsck.ext4 job before Plasma starts.
 cat > "$ROOTFS/tmp/protoos-base-packages.txt" <<'PACKAGES'
 linux-image-amd64
 initramfs-tools
-# Root fs checking must be present both in the root filesystem and the initrd.
-# Without this, systemd waits for a failing fsck.ext4 job before Plasma starts.
 e2fsprogs
 grub-efi-amd64
 grub-efi-amd64-bin
