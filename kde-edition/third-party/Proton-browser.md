@@ -13,6 +13,6 @@ ProtoOS KDE Edition includes the Linux `amd64` package for **Proton Browser** at
 
 ## Build treatment
 
-The VHD builder downloads only the exact URL above using HTTPS, verifies the pinned SHA-256 before installation, checks that the Debian package declares `amd64`, and requires the installed `iskatel` command to exist. The `.deb` is not committed to the ProtoOS repository.
+The VHD builder downloads only the exact URL above using HTTPS, verifies the pinned SHA-256 before installation, checks that the Debian package declares `amd64`, and requires the installed `proton` command to exist. The `.deb` is not committed to the ProtoOS repository.
 
 ProtoOS does not claim ownership of Proton Browser or relicense it. Its upstream license and terms apply. The packaged application is surfaced as **Proton Browser** / **Браузер Proton** with an original ProtoOS Aurora launcher icon.

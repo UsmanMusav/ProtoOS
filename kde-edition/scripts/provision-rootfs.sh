@@ -57,7 +57,7 @@ if [ -n "$proton_deb" ]; then
         apt-get clean
     '
     chroot "$rootfs" dpkg-query -W -f '${Status} ${Version}\n' "$proton_package"
-    chroot "$rootfs" /bin/sh -eu -c 'command -v iskatel'
+    chroot "$rootfs" /bin/sh -eu -c 'command -v proton'
 fi
 
 install -d "$rootfs/etc/sddm.conf.d" "$rootfs/usr/share/color-schemes" \
@@ -87,7 +87,7 @@ done
 test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/index.theme"
 test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/protoos-proton.svg"
 if [ "$proton_required" = 1 ]; then
-    chroot "$rootfs" /bin/sh -eu -c 'command -v iskatel'
+    chroot "$rootfs" /bin/sh -eu -c 'command -v proton'
 fi
 
 if ! chroot "$rootfs" id protoos >/dev/null 2>&1; then
