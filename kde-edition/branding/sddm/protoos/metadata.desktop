@@ -1,0 +1,11 @@
+[SddmGreeterTheme]
+Name=ProtoOS
+Description=Original ProtoOS Live-session sign-in surface
+Author=ProtoOS contributors
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=0.5.0
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=protoos
+Theme-API=2.0

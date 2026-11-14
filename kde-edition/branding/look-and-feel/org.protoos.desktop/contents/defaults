@@ -1,14 +1,17 @@
-[General]
+# Defaults consumed when the ProtoOS appearance package is selected.
+# Keep the visual identity local to ProtoOS while retaining standard Plasma
+# accessibility and input behaviour underneath.
+[kdeglobals][General]
 ColorScheme=ProtoOS Proton Dark
 
-[KSplash]
-Theme=org.kde.breeze.desktop
+[kdeglobals][Icons]
+Theme=ProtoOS-Aurora
 
-[WM]
-activeBackground=31,38,66
-activeForeground=248,250,255
-inactiveBackground=23,28,49
-inactiveForeground=174,185,215
+[kdeglobals][KDE]
+LookAndFeelPackage=org.protoos.desktop
+
+[ksplashrc][KSplash]
+Theme=org.protoos.desktop
 
 [Windows]
 BorderlessMaximizedWindows=true

@@ -32,7 +32,7 @@ plugin=org.kde.plasma.kickoff
 [Containments][2][Applets][3][Configuration][General]
 icon=protoos-home
 menuLabel=Home
-favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.protoos.controlcenter.desktop,applications:org.protoos.computer.desktop,applications:org.kde.dolphin.desktop,applications:org.protoos.recyclebin.desktop,applications:org.kde.kate.desktop,applications:org.kde.okular.desktop,applications:org.kde.gwenview.desktop,applications:org.kde.kcalc.desktop,applications:org.protoos.monitor.desktop,applications:org.protoos.connect.desktop,applications:systemsettings.desktop,applications:org.kde.konsole.desktop
+favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.protoos.controlcenter.desktop,applications:org.protoos.computer.desktop,applications:org.kde.dolphin.desktop,applications:org.protoos.recyclebin.desktop,applications:org.kde.kate.desktop,applications:org.kde.okular.desktop,applications:org.kde.gwenview.desktop,applications:org.kde.kcalc.desktop,applications:org.kde.plasma-systemmonitor.desktop,applications:org.kde.kdeconnect.app.desktop,applications:systemsettings.desktop,applications:org.kde.konsole.desktop
 appNameFormat=0
 favoritesDisplay=0
 applicationsDisplay=0
@@ -67,7 +67,7 @@ immutability=1
 plugin=org.kde.plasma.icontasks
 
 [Containments][2][Applets][6][Configuration][General]
-launchers=applications:org.protoos.controlcenter.desktop,applications:org.protoos.monitor.desktop
+launchers=applications:org.protoos.controlcenter.desktop,applications:org.kde.plasma-systemmonitor.desktop
 showOnlyCurrentDesktop=true
 showOnlyCurrentScreen=false
 showOnlyCurrentActivity=true
@@ -140,7 +140,7 @@ plugin=org.kde.plasma.icontasks
 
 [Containments][3][Applets][8][Configuration][General]
 # The dock is a launch surface, while active-window switching now lives above.
-launchers=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.protoos.computer.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.okular.desktop,applications:org.kde.gwenview.desktop,applications:org.kde.kcalc.desktop,applications:org.protoos.controlcenter.desktop,applications:org.protoos.monitor.desktop
+launchers=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.protoos.computer.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.okular.desktop,applications:org.kde.gwenview.desktop,applications:org.kde.kcalc.desktop,applications:org.protoos.controlcenter.desktop,applications:org.kde.plasma-systemmonitor.desktop
 showOnlyCurrentDesktop=false
 showOnlyCurrentScreen=false
 showOnlyMinimized=false

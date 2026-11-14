@@ -61,17 +61,23 @@ if [ -n "$proton_deb" ]; then
 fi
 
 install -d "$rootfs/etc/sddm.conf.d" "$rootfs/usr/share/color-schemes" \
-    "$rootfs/usr/share/plasma/look-and-feel" "$rootfs/etc/skel/.local/share/wallpapers" \
-    "$rootfs/usr/share/icons" "$rootfs/usr/local/bin" "$rootfs/usr/local/share/applications"
-cp "$project/rootfs/etc/sddm.conf.d/10-protoos-autologin.conf" "$rootfs/etc/sddm.conf.d/"
+    "$rootfs/usr/share/plasma/look-and-feel" "$rootfs/usr/share/sddm/themes" \
+    "$rootfs/usr/share/xsessions" "$rootfs/usr/local/share/xsessions" \
+    "$rootfs/etc/skel/.local/share/wallpapers" "$rootfs/usr/share/icons" \
+    "$rootfs/usr/local/bin" "$rootfs/usr/local/share/applications"
+cp "$project/rootfs/etc/sddm.conf.d/"*.conf "$rootfs/etc/sddm.conf.d/"
 cp "$project/branding/colors/"*.colors "$rootfs/usr/share/color-schemes/"
 cp -a "$project/branding/look-and-feel/org.protoos.desktop" "$rootfs/usr/share/plasma/look-and-feel/"
+cp -a "$project/branding/sddm/protoos" "$rootfs/usr/share/sddm/themes/"
 cp -a "$project/branding/wallpapers/ProtoOS" "$rootfs/etc/skel/.local/share/wallpapers/"
 cp -a "$project/branding/icons/ProtoOS-Aurora" "$rootfs/usr/share/icons/"
 cp -a "$project/rootfs/etc/skel/." "$rootfs/etc/skel/"
+cp -a "$project/rootfs/usr/share/xsessions/." "$rootfs/usr/share/xsessions/"
 # /usr/local takes precedence over package desktop entries. Keep the package
-# binaries while presenting the concise ProtoOS roles in the application menu.
+# binaries while presenting concise ProtoOS roles and hiding duplicate upstream
+# launchers from the application menu.
 cp -a "$project/rootfs/usr/local/share/applications/." "$rootfs/usr/local/share/applications/"
+cp -a "$project/rootfs/usr/local/share/xsessions/." "$rootfs/usr/local/share/xsessions/"
 cp -a "$project/rootfs/usr/local/bin/." "$rootfs/usr/local/bin/"
 chmod 0755 "$rootfs/usr/local/bin/protoos-welcome" "$rootfs/usr/local/bin/protoos-settings" \
     "$rootfs/usr/local/bin/protoos-control-center"
@@ -93,6 +99,14 @@ grep -Fqx 'Enabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'fadeEnabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'Indexing-Enabled=false' "$rootfs/etc/skel/.config/baloofilerc"
 grep -Fqx 'ColorScheme=ProtoOS Proton Dark' "$rootfs/etc/skel/.config/kdeglobals"
+grep -Fqx 'Theme=org.protoos.desktop' "$rootfs/etc/skel/.config/ksplashrc"
+grep -Fqx 'Current=protoos' "$rootfs/etc/sddm.conf.d/20-protoos-theme.conf"
+grep -Fqx 'Session=protoos' "$rootfs/etc/sddm.conf.d/10-protoos-autologin.conf"
+test -s "$rootfs/usr/share/sddm/themes/protoos/Main.qml"
+grep -Fqx 'Theme-Id=protoos' "$rootfs/usr/share/sddm/themes/protoos/metadata.desktop"
+test -s "$rootfs/usr/share/plasma/look-and-feel/org.protoos.desktop/contents/splash/Splash.qml"
+test -s "$rootfs/usr/share/xsessions/protoos.desktop"
+test -s "$rootfs/usr/local/share/xsessions/plasma.desktop"
 grep -Fqx 'icon=protoos-home' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
 grep -Fqx 'menuLabel=Home' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
 grep -Fqx 'plugin=org.kde.plasma.pager' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
@@ -102,11 +116,14 @@ grep -Fqx 'plugin=org.kde.plasma.lock_logout' "$rootfs/etc/skel/.config/plasma-o
 grep -Fqx 'Name=ProtoOS Proton Dark' "$rootfs/usr/share/color-schemes/ProtoOS Aurora Dark.colors"
 grep -Fqx 'Name=ProtoOS Proton Light' "$rootfs/usr/share/color-schemes/ProtoOS Aurora Light.colors"
 for launcher in org.protoos.welcome org.protoos.proton org.protoos.controlcenter \
-    org.protoos.connect org.protoos.computer org.protoos.recyclebin \
-    org.protoos.monitor org.kde.dolphin org.kde.konsole org.kde.kate \
-    org.kde.okular org.kde.gwenview org.kde.ark org.kde.kcalc systemsettings; do
+    org.protoos.computer org.protoos.recyclebin org.kde.plasma-systemmonitor \
+    org.kde.kdeconnect.app org.kde.kdeconnect.sms org.kde.kdeconnect.handler \
+    org.kde.dolphin org.kde.konsole org.kde.kate org.kde.okular \
+    org.kde.gwenview org.kde.ark org.kde.kcalc systemsettings; do
     test -s "$rootfs/usr/local/share/applications/$launcher.desktop"
 done
+grep -Fqx 'Hidden=true' "$rootfs/usr/local/share/applications/org.kde.kdeconnect.sms.desktop"
+grep -Fqx 'Hidden=true' "$rootfs/usr/local/share/applications/org.kde.kdeconnect.handler.desktop"
 for command in protoos-welcome protoos-settings protoos-control-center; do
     test -x "$rootfs/usr/local/bin/$command"
 done
@@ -124,7 +141,7 @@ for icon in protoos-home protoos-proton protoos-welcome protoos-images protoos-a
     protoos-controlcenter protoos-connect; do
     test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/$icon.svg"
 done
-for command in kdialog gwenview ark kcalc plasma-systemmonitor kdeconnect-app; do
+for command in startplasma-x11 kdialog gwenview ark kcalc plasma-systemmonitor kdeconnect-app; do
     chroot "$rootfs" /bin/sh -eu -c "command -v $command"
 done
 if [ "$proton_required" = 1 ]; then

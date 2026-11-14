@@ -1,0 +1,3 @@
+[KSplash]
+# Never fall back to the stock desktop splash on a fresh ProtoOS Live home.
+Theme=org.protoos.desktop

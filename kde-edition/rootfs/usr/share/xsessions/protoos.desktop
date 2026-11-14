@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=XSession
+Exec=startplasma-x11
+TryExec=startplasma-x11
+Name=ProtoOS Live Session
+Name[ru]=Сеанс ProtoOS Live
+Comment=Start the ProtoOS desktop session
+Comment[ru]=Запустить рабочий стол ProtoOS

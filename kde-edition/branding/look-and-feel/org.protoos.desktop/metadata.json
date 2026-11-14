@@ -1,9 +1,9 @@
 {
   "KPlugin": {
     "Id": "org.protoos.desktop",
-    "Name": "ProtoOS Aurora",
-    "Description": "The default desktop appearance for ProtoOS KDE Edition",
-    "Version": "0.4.9",
+    "Name": "ProtoOS Surface",
+    "Description": "The original desktop appearance for ProtoOS",
+    "Version": "0.5.0",
     "License": "GPL-3.0-or-later",
     "Authors": [
       {"Name": "ProtoOS contributors"}

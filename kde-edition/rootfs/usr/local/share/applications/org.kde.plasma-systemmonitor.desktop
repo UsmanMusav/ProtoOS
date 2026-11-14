@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Task Manager
+Name[ru]=Диспетчер задач
+GenericName=ProtoOS Task Manager
+GenericName[ru]=Управление программами и нагрузкой
+Comment=See open apps, processes and system resource usage
+Comment[ru]=Программы, процессы и нагрузка системы
+Exec=plasma-systemmonitor
+Icon=protoos-monitor
+Categories=Qt;KDE;System;Monitor;
+StartupNotify=true

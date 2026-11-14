@@ -16,7 +16,7 @@ PROTON_VERSION=5.1.0
 PROTON_DEB_NAME=iskatel-linux-amd64.deb
 PROTON_DEB_URL="https://github.com/UsmanMusav/Proton-updates/releases/download/v${PROTON_VERSION}/${PROTON_DEB_NAME}"
 PROTON_DEB_SHA256=e7a9c505ec626df0f991450beef7acf8ce6fc3f27f66a01220e9fb1bf0d4fb81
-VHD="$OUT/ProtoOS-KDE-0.4.9-HyperV.vhd"
+VHD="$OUT/ProtoOS-0.5.0-HyperV.vhd"
 RAW="$WORK/protoos-kde.raw"
 ROOTFS="$WORK/rootfs"
 LOOP_DEVICE=
@@ -121,7 +121,7 @@ PROTOOS_PROTON_DEB="$PROTON_DEB" PROTOOS_REQUIRE_PROTON=1 \
 cat > "$ROOTFS/etc/default/grub" <<'GRUB'
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=3
-GRUB_DISTRIBUTOR="ProtoOS KDE Edition"
+GRUB_DISTRIBUTOR="ProtoOS"
 GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
 GRUB_CMDLINE_LINUX=""
 GRUB_GFXMODE=1280x720,1024x768,auto
@@ -156,10 +156,10 @@ RequiredBy=display-manager.service
 SERVICE
 
 cat > "$ROOTFS/etc/os-release" <<'OS_RELEASE'
-PRETTY_NAME="ProtoOS KDE Edition 0.4.9 Command Center"
-NAME="ProtoOS KDE Edition"
-VERSION_ID="0.4.9"
-VERSION="0.4.9 (Command Center and desktop essentials, Debian KDE Plasma Live)"
+PRETTY_NAME="ProtoOS 0.5.0 Surface"
+NAME="ProtoOS"
+VERSION_ID="0.5.0"
+VERSION="0.5.0 (ProtoOS Surface, Live desktop)"
 ID=protoos
 ID_LIKE=debian
 HOME_URL="https://github.com/UsmanMusav/ProtoOS"

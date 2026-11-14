@@ -53,10 +53,10 @@ jobs:
       - name: Publish VHD for Hyper-V testing
         uses: actions/upload-artifact@v4
         with:
-          name: ProtoOS-KDE-HyperV-${{ inputs.debian_release || 'trixie' }}
+          name: ProtoOS-HyperV-${{ inputs.debian_release || 'trixie' }}
           path: |
-            release/ProtoOS-KDE-0.4.9-HyperV.vhd
-            release/ProtoOS-KDE-0.4.9-HyperV.vhd.sha256
+            release/ProtoOS-0.5.0-HyperV.vhd
+            release/ProtoOS-0.5.0-HyperV.vhd.sha256
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
@@ -70,7 +70,7 @@ jobs:
           # The builder runs under sudo, so take ownership before producing the
           # release-side compressed file as the unprivileged Actions runner.
           sudo chown -R "$(id -u):$(id -g)" release
-          VHD=release/ProtoOS-KDE-0.4.9-HyperV.vhd
+          VHD=release/ProtoOS-0.5.0-HyperV.vhd
           xz --threads=0 --compress --keep --force --verbose "$VHD" 2>&1 | tee "${RUNNER_TEMP}/protoos-kde-release.log"
           sha256sum "$VHD.xz" > "$VHD.xz.sha256"
 
@@ -78,17 +78,17 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: v0.4.9-command-center-preview.1
+          RELEASE_TAG: v0.5.0-protoos-surface-preview.1
         run: |
           set -euo pipefail
           gh release create "$RELEASE_TAG" \
             --target "$GITHUB_SHA" \
-            --title "ProtoOS KDE Edition 0.4.9 Command Center Preview 1" \
-            --notes "Debian Trixie KDE Plasma Live preview for Hyper-V Generation 2. Rebuilds the upper panel as the ProtoOS Command Bar: labeled Home, visual workspace picker, centered app switcher with Quick Center and Task Manager, clipboard history, system tray, date/time, Show Desktop and session actions. Quick Center now provides direct routes to network, sound, display resolution, files, connected devices, appearance and full System Settings. Adds KDE Connect for phone/device pairing, KScreen display controls and kio-admin file-manager integration; Welcome gains Downloads, Pictures, Recycle Bin, archives and Terminal actions. The Full Motion effects profile and fsck.ext4 initrd release gate remain enabled. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
+            --title "ProtoOS 0.5.0 Surface Preview 1" \
+            --notes "ProtoOS Live preview for Hyper-V Generation 2. Rebrands the remaining end-user desktop surfaces: original ProtoOS splash screen, original ProtoOS SDDM sign-in surface, a ProtoOS-named Live session, ProtoOS boot menu identity and a ProtoOS system name in About. The application menu now suppresses duplicate upstream-branded Device Link and Task Manager launchers in favour of the concise ProtoOS names; support-only KDE Connect launchers are hidden. Command Bar, Quick Center, Full Motion, KDE Connect, KScreen, kio-admin and the fsck.ext4 initrd release gate remain included. Technical Debian/Linux/KDE attribution remains available where required by diagnostics and licensing. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
             --prerelease \
-            release/ProtoOS-KDE-0.4.9-HyperV.vhd.xz \
-            release/ProtoOS-KDE-0.4.9-HyperV.vhd.xz.sha256 \
-            release/ProtoOS-KDE-0.4.9-HyperV.vhd.sha256
+            release/ProtoOS-0.5.0-HyperV.vhd.xz \
+            release/ProtoOS-0.5.0-HyperV.vhd.xz.sha256 \
+            release/ProtoOS-0.5.0-HyperV.vhd.sha256
 
       - name: Publish failure diagnostics
         if: ${{ failure() }}
