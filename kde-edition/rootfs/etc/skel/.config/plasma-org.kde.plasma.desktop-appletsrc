@@ -1,5 +1,6 @@
-# ProtoOS Aurora Performance shell: one restrained top bar and a compact
-# icon-only application strip. No third-party dock or GPU-heavy widget is used.
+# ProtoOS Command Bar: a full-width, high-utility desktop command surface.
+# The upper panel handles navigation, workspaces, open apps and session controls;
+# the lower floating dock stays focused on launching the everyday tools.
 [Containments][1]
 activityId=
 formfactor=0
@@ -22,16 +23,16 @@ location=3
 plugin=org.kde.panel
 wallpaperplugin=org.kde.image
 
+# Main navigation is deliberately labeled: Home opens the actual Plasma menu,
+# including the ProtoOS favourites, rather than a decorative start page.
 [Containments][2][Applets][3]
 immutability=1
 plugin=org.kde.plasma.kickoff
 
 [Containments][2][Applets][3][Configuration][General]
-# A named Home button and a familiar house icon make the primary navigation
-# obvious, instead of presenting an unlabelled stock Plasma launcher.
 icon=protoos-home
 menuLabel=Home
-favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.protoos.computer.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.gwenview.desktop,applications:org.kde.kcalc.desktop,applications:org.protoos.monitor.desktop,applications:systemsettings.desktop
+favoriteApps=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.protoos.controlcenter.desktop,applications:org.protoos.computer.desktop,applications:org.kde.dolphin.desktop,applications:org.protoos.recyclebin.desktop,applications:org.kde.kate.desktop,applications:org.kde.okular.desktop,applications:org.kde.gwenview.desktop,applications:org.kde.kcalc.desktop,applications:org.protoos.monitor.desktop,applications:org.protoos.connect.desktop,applications:systemsettings.desktop,applications:org.kde.konsole.desktop
 appNameFormat=0
 favoritesDisplay=0
 applicationsDisplay=0
@@ -41,29 +42,88 @@ highlightNewlyInstalledApps=false
 switchCategoryOnHover=false
 showActionButtonCaptions=true
 
+# Workspace picker: the first item beside Home gives a visual, click-to-switch
+# route to virtual desktops without requiring keyboard shortcuts.
 [Containments][2][Applets][4]
 immutability=1
-plugin=org.kde.plasma.panelspacer
+plugin=org.kde.plasma.pager
+
+[Containments][2][Applets][4][Configuration][General]
+displayedText=0
+pagerLayout=1
+showOnlyCurrentScreen=false
+showWindowIcons=true
+showWindowOutlines=true
+wrapPage=false
 
 [Containments][2][Applets][5]
 immutability=1
-plugin=org.kde.plasma.digitalclock
+plugin=org.kde.plasma.panelspacer
 
-[Containments][2][Applets][5][Configuration][Appearance]
-showDate=false
-showSeconds=false
-
+# The center becomes an always-present app switcher. Its fixed entries expose
+# Quick Center and Task Manager; ordinary running apps then appear beside them.
 [Containments][2][Applets][6]
+immutability=1
+plugin=org.kde.plasma.icontasks
+
+[Containments][2][Applets][6][Configuration][General]
+launchers=applications:org.protoos.controlcenter.desktop,applications:org.protoos.monitor.desktop
+showOnlyCurrentDesktop=true
+showOnlyCurrentScreen=false
+showOnlyCurrentActivity=true
+showOnlyMinimized=false
+groupingStrategy=1
+groupedTaskVisualization=2
+groupPopups=true
+onlyGroupWhenFull=true
+separateLaunchers=true
+hideLauncherOnStart=false
+maxStripes=1
+taskMaxWidth=0
+wheelEnabled=1
+showToolTips=true
+taskHoverEffect=true
+highlightWindows=true
+fill=true
+
+[Containments][2][Applets][7]
+immutability=1
+plugin=org.kde.plasma.panelspacer
+
+# Clipboard history, connectivity/audio/notifications, readable time, desktop
+# peek and session actions form the right-side utility cluster.
+[Containments][2][Applets][8]
+immutability=1
+plugin=org.kde.plasma.clipboard
+
+[Containments][2][Applets][9]
 immutability=1
 plugin=org.kde.plasma.systemtray
 
+[Containments][2][Applets][10]
+immutability=1
+plugin=org.kde.plasma.digitalclock
+
+[Containments][2][Applets][10][Configuration][Appearance]
+showDate=true
+showSeconds=false
+
+[Containments][2][Applets][11]
+immutability=1
+plugin=org.kde.plasma.showdesktop
+
+[Containments][2][Applets][12]
+immutability=1
+plugin=org.kde.plasma.lock_logout
+
 [Containments][2][General]
-# A full-width translucent menu bar anchors Home, time and system controls.
-AppletOrder=3;4;5;6
+# Command Bar is intentionally taller than the earlier menu strip: it remains
+# compact, but keeps each daily control usable with a Hyper-V mouse.
+AppletOrder=3;4;5;6;7;8;9;10;11;12
 floating=0
 panelLengthMode=0
 panelOpacity=2
-thickness=30
+thickness=42
 
 [Containments][3]
 activityId=
@@ -74,27 +134,25 @@ location=4
 plugin=org.kde.panel
 wallpaperplugin=org.kde.image
 
-[Containments][3][Applets][7]
-immutability=1
-plugin=org.kde.plasma.panelspacer
-
 [Containments][3][Applets][8]
 immutability=1
 plugin=org.kde.plasma.icontasks
 
 [Containments][3][Applets][8][Configuration][General]
-launchers=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.okular.desktop,applications:org.kde.gwenview.desktop,applications:systemsettings.desktop
+# The dock is a launch surface, while active-window switching now lives above.
+launchers=applications:org.protoos.welcome.desktop,applications:org.protoos.proton.desktop,applications:org.protoos.computer.desktop,applications:org.kde.dolphin.desktop,applications:org.kde.kate.desktop,applications:org.kde.okular.desktop,applications:org.kde.gwenview.desktop,applications:org.kde.kcalc.desktop,applications:org.protoos.controlcenter.desktop,applications:org.protoos.monitor.desktop
 showOnlyCurrentDesktop=false
 showOnlyCurrentScreen=false
 showOnlyMinimized=false
-
-[Containments][3][Applets][9]
-immutability=1
-plugin=org.kde.plasma.panelspacer
+groupingStrategy=1
+separateLaunchers=true
+hideLauncherOnStart=false
+maxStripes=1
+taskHoverEffect=true
 
 [Containments][3][General]
-# A centered, content-sized floating dock gives fast app switching a familiar
-# macOS-like shape while keeping the visual identity completely ProtoOS.
+# A centered floating dock provides direct launch access without duplicating
+# the work-management controls now present in the Command Bar.
 AppletOrder=8
 alignment=4
 floating=1

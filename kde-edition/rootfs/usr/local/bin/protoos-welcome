@@ -10,37 +10,51 @@ fi
 case "${LANG:-${LC_MESSAGES:-}}" in
     ru*|RU*)
         title='Добро пожаловать в ProtoOS'
-        prompt='Выберите, с чего хотите начать. Этот помощник всегда доступен в панели приложений.'
+        prompt='Выберите, с чего хотите начать. Этот помощник всегда доступен в Home и на dock-панели.'
         browser='Открыть браузер Proton'
         computer='Открыть «Этот компьютер»'
         files='Открыть файлы'
         documents='Открыть папку «Документы»'
+        downloads='Открыть папку «Загрузки»'
+        pictures='Открыть папку «Изображения»'
+        recycle='Открыть корзину'
         calculator='Открыть калькулятор'
+        archives='Открыть работу с архивами'
+        terminal='Открыть терминал'
         monitor='Открыть диспетчер задач'
+        devices='Подключённые устройства'
+        center='Открыть Центр управления'
         network='Настроить сеть'
         appearance='Настроить внешний вид'
         motion='Настроить эффекты окон'
         shortcuts='Горячие клавиши'
         live='О режиме Live'
-        live_text='ProtoOS сейчас работает в режиме Live. Файлы и настройки в домашней папке сохраняются только до выключения виртуальной машины. Скопируйте важные документы на подключённый диск или в облако до выключения.'
-        shortcuts_text='Meta — открыть меню приложений\nAlt+Tab — переключить окно\nPrint Screen — сделать снимок\nAlt+Shift+F12 — включить или выключить эффекты окон'
+        live_text='ProtoOS сейчас работает в режиме Live. Файлы и настройки в домашней папке сохраняются только до выключения виртуальной машины. Скопируйте важные документы на подключённый диск, сетевое место или в облако до выключения.'
+        shortcuts_text='Meta — открыть меню приложений\nAlt+Space — найти приложение, файл или действие\nAlt+Tab — переключить окно\nAlt+Shift+F12 — включить или выключить эффекты окон\nВерхняя панель — рабочие столы, открытые приложения, буфер обмена и системные действия'
         ;;
     *)
         title='Welcome to ProtoOS'
-        prompt='Choose a starting point. This helper is always available from the application panel.'
+        prompt='Choose a starting point. This helper is always available from Home and the dock.'
         browser='Open Proton Browser'
         computer='Open This PC'
         files='Open Files'
         documents='Open Documents folder'
+        downloads='Open Downloads folder'
+        pictures='Open Pictures folder'
+        recycle='Open Recycle Bin'
         calculator='Open Calculator'
+        archives='Open Archive Manager'
+        terminal='Open Terminal'
         monitor='Open System Monitor'
+        devices='Connected devices'
+        center='Open Control Center'
         network='Set up network'
         appearance='Personalize appearance'
         motion='Adjust window effects'
         shortcuts='Keyboard shortcuts'
         live='About Live mode'
-        live_text='ProtoOS is running in Live mode. Files and settings in the home folder last only until the virtual machine is shut down. Copy important work to an attached drive or cloud storage before powering off.'
-        shortcuts_text='Meta — open the application menu\nAlt+Tab — switch windows\nPrint Screen — take a screenshot\nAlt+Shift+F12 — toggle window effects'
+        live_text='ProtoOS is running in Live mode. Files and settings in the home folder last only until the virtual machine is shut down. Copy important work to an attached drive, network location or cloud storage before powering off.'
+        shortcuts_text='Meta — open the application menu\nAlt+Space — find an app, file or action\nAlt+Tab — switch windows\nAlt+Shift+F12 — toggle window effects\nTop bar — workspaces, open apps, clipboard and session actions'
         ;;
 esac
 
@@ -50,8 +64,15 @@ while :; do
         computer "$computer" \
         files "$files" \
         documents "$documents" \
+        downloads "$downloads" \
+        pictures "$pictures" \
+        recycle "$recycle" \
         calculator "$calculator" \
+        archives "$archives" \
+        terminal "$terminal" \
         monitor "$monitor" \
+        devices "$devices" \
+        center "$center" \
         network "$network" \
         appearance "$appearance" \
         motion "$motion" \
@@ -66,8 +87,21 @@ while :; do
             mkdir -p "$HOME/Documents"
             exec dolphin "$HOME/Documents"
             ;;
+        downloads)
+            mkdir -p "$HOME/Downloads"
+            exec dolphin "$HOME/Downloads"
+            ;;
+        pictures)
+            mkdir -p "$HOME/Pictures"
+            exec dolphin "$HOME/Pictures"
+            ;;
+        recycle) exec dolphin trash:/ ;;
         calculator) exec kcalc ;;
+        archives) exec ark ;;
+        terminal) exec konsole ;;
         monitor) exec plasma-systemmonitor ;;
+        devices) exec kdeconnect-app ;;
+        center) exec protoos-control-center ;;
         network) exec systemsettings kcm_networkmanagement ;;
         appearance) exec systemsettings kcm_colors ;;
         motion) exec systemsettings kcm_kwin_effects ;;

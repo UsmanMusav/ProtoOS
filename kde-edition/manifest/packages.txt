@@ -22,10 +22,18 @@ gwenview
 kcalc
 kdialog
 kio-extras
+# Dolphin integration for privileged file operations when authentication is
+# needed; normal file management remains unprivileged.
+kio-admin
 kate
 okular
 systemsettings
 xdg-user-dirs
+
+# Practical device and display controls exposed through ProtoOS Quick Center.
+# KDE Connect can pair a phone or another device on the same network.
+kdeconnect
+kscreen
 
 # Visual/input integration
 xserver-xorg-core

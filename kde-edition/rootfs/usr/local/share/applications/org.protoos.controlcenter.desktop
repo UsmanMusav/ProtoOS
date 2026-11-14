@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Control Center
+Name[ru]=Центр управления
+GenericName=ProtoOS Quick Controls
+GenericName[ru]=Быстрые настройки ProtoOS
+Comment=Open network, sound, display and workspace controls
+Comment[ru]=Сеть, звук, экран и управление рабочим пространством
+Exec=protoos-control-center
+Icon=protoos-controlcenter
+Categories=Qt;KDE;Settings;System;
+StartupNotify=true

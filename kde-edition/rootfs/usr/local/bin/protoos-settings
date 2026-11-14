@@ -1,5 +1,6 @@
 #!/bin/sh
-# A clear, small front door to the settings people need most in a Live session.
+# A concise settings entry point for a Live desktop. The broader Quick Center
+# is separate so Settings can still lead naturally to the complete control set.
 set -u
 
 if ! command -v kdialog >/dev/null 2>&1; then
@@ -9,16 +10,22 @@ fi
 case "${LANG:-${LC_MESSAGES:-}}" in
     ru*|RU*)
         title='Настройки ProtoOS'
-        prompt='Быстрый доступ к часто используемым настройкам. Полный список всегда доступен в «Все системные настройки».'
+        prompt='Часто используемые настройки. Для сети, звука и экрана можно также открыть «Центр управления».'
+        center='Открыть Центр управления'
         network='Сеть и интернет'
+        audio='Звук и микрофон'
+        display='Экран и разрешение'
         appearance='Оформление и цвета'
         motion='Эффекты и анимации окон'
         all='Все системные настройки'
         ;;
     *)
         title='ProtoOS Settings'
-        prompt='Quick access to common settings. The complete list is always available from All System Settings.'
+        prompt='Common settings. Open Control Center as well for network, audio and display shortcuts.'
+        center='Open Control Center'
         network='Network and internet'
+        audio='Sound and microphone'
+        display='Display and resolution'
         appearance='Appearance and colors'
         motion='Window effects and animations'
         all='All System Settings'
@@ -26,13 +33,19 @@ case "${LANG:-${LC_MESSAGES:-}}" in
 esac
 
 choice=$(kdialog --title "$title" --icon protoos-settings --menu "$prompt" \
+    center "$center" \
     network "$network" \
+    audio "$audio" \
+    display "$display" \
     appearance "$appearance" \
     motion "$motion" \
     all "$all") || exit 0
 
 case "$choice" in
+    center) exec protoos-control-center ;;
     network) exec systemsettings kcm_networkmanagement ;;
+    audio) exec systemsettings kcm_pulseaudio ;;
+    display) exec systemsettings kcm_kscreen ;;
     appearance) exec systemsettings kcm_colors ;;
     motion) exec systemsettings kcm_kwin_effects ;;
     all) exec systemsettings ;;

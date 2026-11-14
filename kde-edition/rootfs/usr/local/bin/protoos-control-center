@@ -1,0 +1,60 @@
+#!/bin/sh
+# ProtoOS Quick Center: direct routes to the controls used in a Live desktop.
+# It is intentionally a local kdialog menu, not a background daemon or web UI.
+set -u
+
+if ! command -v kdialog >/dev/null 2>&1; then
+    exec systemsettings
+fi
+
+case "${LANG:-${LC_MESSAGES:-}}" in
+    ru*|RU*)
+        title='Центр управления ProtoOS'
+        prompt='Быстрый доступ к сети, звуку, экрану и рабочему пространству.'
+        network='Сеть и интернет'
+        audio='Звук и микрофон'
+        display='Экран и разрешение'
+        files='Файлы, диски и сетевые места'
+        devices='Подключённые устройства'
+        monitor='Диспетчер задач'
+        appearance='Оформление и цвета'
+        motion='Эффекты и анимации окон'
+        all='Все системные настройки'
+        ;;
+    *)
+        title='ProtoOS Control Center'
+        prompt='Quick access to network, audio, display and workspace controls.'
+        network='Network and internet'
+        audio='Sound and microphone'
+        display='Display and resolution'
+        files='Files, drives and network locations'
+        devices='Connected devices'
+        monitor='System Monitor'
+        appearance='Appearance and colors'
+        motion='Window effects and animations'
+        all='All System Settings'
+        ;;
+esac
+
+choice=$(kdialog --title "$title" --icon protoos-controlcenter --menu "$prompt" \
+    network "$network" \
+    audio "$audio" \
+    display "$display" \
+    files "$files" \
+    devices "$devices" \
+    monitor "$monitor" \
+    appearance "$appearance" \
+    motion "$motion" \
+    all "$all") || exit 0
+
+case "$choice" in
+    network) exec systemsettings kcm_networkmanagement ;;
+    audio) exec systemsettings kcm_pulseaudio ;;
+    display) exec systemsettings kcm_kscreen ;;
+    files) exec dolphin computer:/ ;;
+    devices) exec kdeconnect-app ;;
+    monitor) exec plasma-systemmonitor ;;
+    appearance) exec systemsettings kcm_colors ;;
+    motion) exec systemsettings kcm_kwin_effects ;;
+    all) exec systemsettings ;;
+esac

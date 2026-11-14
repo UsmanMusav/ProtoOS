@@ -73,7 +73,8 @@ cp -a "$project/rootfs/etc/skel/." "$rootfs/etc/skel/"
 # binaries while presenting the concise ProtoOS roles in the application menu.
 cp -a "$project/rootfs/usr/local/share/applications/." "$rootfs/usr/local/share/applications/"
 cp -a "$project/rootfs/usr/local/bin/." "$rootfs/usr/local/bin/"
-chmod 0755 "$rootfs/usr/local/bin/protoos-welcome" "$rootfs/usr/local/bin/protoos-settings"
+chmod 0755 "$rootfs/usr/local/bin/protoos-welcome" "$rootfs/usr/local/bin/protoos-settings" \
+    "$rootfs/usr/local/bin/protoos-control-center"
 # The Live-home service copies /etc/skel on every boot, so create visible,
 # predictable folders there rather than only in the builder's temporary user.
 install -d "$rootfs/etc/skel/Desktop" "$rootfs/etc/skel/Documents" \
@@ -81,8 +82,10 @@ install -d "$rootfs/etc/skel/Desktop" "$rootfs/etc/skel/Documents" \
     "$rootfs/etc/skel/Music" "$rootfs/etc/skel/Videos" "$rootfs/etc/skel/Public" \
     "$rootfs/etc/skel/Templates"
 
-# Keep the selected Aurora Motion profile testable: the installed rootfs must
-# carry its settings before a VHD is published, not merely document them.
+# Keep the selected Full Motion and Command Bar profile testable: the installed
+# rootfs must carry its settings before a VHD is published, not merely document
+# them. The explicit plugin checks catch an accidental fallback to the former
+# sparse menu strip.
 test -s "$rootfs/etc/skel/.config/kwinrc"
 test -s "$rootfs/etc/skel/.config/baloofilerc"
 test -s "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
@@ -92,16 +95,21 @@ grep -Fqx 'Indexing-Enabled=false' "$rootfs/etc/skel/.config/baloofilerc"
 grep -Fqx 'ColorScheme=ProtoOS Proton Dark' "$rootfs/etc/skel/.config/kdeglobals"
 grep -Fqx 'icon=protoos-home' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
 grep -Fqx 'menuLabel=Home' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
+grep -Fqx 'plugin=org.kde.plasma.pager' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
+grep -Fqx 'plugin=org.kde.plasma.clipboard' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
+grep -Fqx 'plugin=org.kde.plasma.showdesktop' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
+grep -Fqx 'plugin=org.kde.plasma.lock_logout' "$rootfs/etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc"
 grep -Fqx 'Name=ProtoOS Proton Dark' "$rootfs/usr/share/color-schemes/ProtoOS Aurora Dark.colors"
 grep -Fqx 'Name=ProtoOS Proton Light' "$rootfs/usr/share/color-schemes/ProtoOS Aurora Light.colors"
-for launcher in org.protoos.welcome org.protoos.proton org.protoos.computer \
-    org.protoos.recyclebin org.protoos.monitor org.kde.dolphin org.kde.konsole \
-    org.kde.kate org.kde.okular org.kde.gwenview org.kde.ark org.kde.kcalc \
-    systemsettings; do
+for launcher in org.protoos.welcome org.protoos.proton org.protoos.controlcenter \
+    org.protoos.connect org.protoos.computer org.protoos.recyclebin \
+    org.protoos.monitor org.kde.dolphin org.kde.konsole org.kde.kate \
+    org.kde.okular org.kde.gwenview org.kde.ark org.kde.kcalc systemsettings; do
     test -s "$rootfs/usr/local/share/applications/$launcher.desktop"
 done
-test -x "$rootfs/usr/local/bin/protoos-welcome"
-test -x "$rootfs/usr/local/bin/protoos-settings"
+for command in protoos-welcome protoos-settings protoos-control-center; do
+    test -x "$rootfs/usr/local/bin/$command"
+done
 test -s "$rootfs/etc/skel/.config/user-dirs.dirs"
 for folder in Desktop Documents Downloads Pictures Music Videos Public Templates; do
     test -d "$rootfs/etc/skel/$folder"
@@ -112,10 +120,11 @@ test -s "$rootfs/usr/share/icons/breeze-dark/index.theme"
 test -s "$rootfs/usr/share/icons/breeze/index.theme"
 test -s "$rootfs/usr/share/icons/hicolor/index.theme"
 for icon in protoos-home protoos-proton protoos-welcome protoos-images protoos-archive \
-    protoos-calculator protoos-computer protoos-monitor protoos-recycle; do
+    protoos-calculator protoos-computer protoos-monitor protoos-recycle \
+    protoos-controlcenter protoos-connect; do
     test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/$icon.svg"
 done
-for command in kdialog gwenview ark kcalc plasma-systemmonitor; do
+for command in kdialog gwenview ark kcalc plasma-systemmonitor kdeconnect-app; do
     chroot "$rootfs" /bin/sh -eu -c "command -v $command"
 done
 if [ "$proton_required" = 1 ]; then

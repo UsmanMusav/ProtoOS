@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Connected Devices
+Name[ru]=Подключённые устройства
+GenericName=ProtoOS Device Link
+GenericName[ru]=Связь устройств ProtoOS
+Comment=Pair a phone or another device and share files
+Comment[ru]=Подключение устройств и обмен файлами
+Exec=kdeconnect-app
+Icon=protoos-connect
+Categories=Qt;KDE;Network;Utility;
+StartupNotify=true
