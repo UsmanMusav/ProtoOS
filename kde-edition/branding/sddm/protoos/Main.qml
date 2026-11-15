@@ -9,8 +9,14 @@ Rectangle {
     height: 720
     color: "#10152f"
 
-    property int sessionIndex: sessionSelector.index
+    // The image exposes one purpose-built ProtoOS Live session, so the login
+    // flow can use the remembered session index without a stock ComboBox.
+    property int sessionIndex: sessionModel.lastIndex
     property bool russian: Qt.locale().name.indexOf("ru") === 0
+    property string uiFont: "Noto Sans"
+    // Hyper-V can start in a compact framebuffer mode before display resizing.
+    // Avoid overlapping text and the sign-in card at those dimensions.
+    property bool compactLayout: width < 920 || height < 600
 
     Connections {
         target: sddm
@@ -51,6 +57,7 @@ Rectangle {
 
     Column {
         id: identity
+        visible: !root.compactLayout
         anchors.left: parent.left
         anchors.leftMargin: Math.max(48, parent.width * 0.14)
         anchors.verticalCenter: parent.verticalCenter
@@ -118,10 +125,13 @@ Rectangle {
 
     Rectangle {
         id: signInCard
-        width: Math.min(390, parent.width - 72)
-        height: 348
-        anchors.right: parent.right
-        anchors.rightMargin: Math.max(40, parent.width * 0.14)
+        width: Math.min(390, parent.width - 48)
+        // Enough room for translated labels and the Live-session label at 720p;
+        // the earlier compact card could crop its final controls.
+        height: 414
+        anchors.right: root.compactLayout ? undefined : parent.right
+        anchors.rightMargin: root.compactLayout ? 0 : Math.max(40, parent.width * 0.14)
+        anchors.horizontalCenter: root.compactLayout ? parent.horizontalCenter : undefined
         anchors.verticalCenter: parent.verticalCenter
         radius: 22
         color: "#e9e8ff"
@@ -131,8 +141,8 @@ Rectangle {
 
         Column {
             anchors.fill: parent
-            anchors.margins: 32
-            spacing: 12
+            anchors.margins: 30
+            spacing: 10
 
             Text {
                 text: root.russian ? "Вход в ProtoOS" : "Sign in to ProtoOS"
@@ -154,12 +164,34 @@ Rectangle {
                 color: "#46466e"
                 font.pixelSize: 12
             }
-            TextBox {
-                id: userEntry
+            // Use native TextInput controls with explicit foreground, selection
+            // and focus colors. Theme-provided SDDM fields can inherit a light
+            // foreground on this pale card, which makes typed Cyrillic text hard
+            // to see in a VM.
+            Rectangle {
                 width: parent.width
-                height: 38
-                text: userModel.lastUser
-                KeyNavigation.tab: passwordEntry
+                height: 42
+                radius: 11
+                color: "#ffffff"
+                border.width: userEntry.activeFocus ? 2 : 1
+                border.color: userEntry.activeFocus ? "#7068e8" : "#b9b6dc"
+
+                TextInput {
+                    id: userEntry
+                    anchors.fill: parent
+                    anchors.leftMargin: 13
+                    anchors.rightMargin: 13
+                    color: "#24234d"
+                    selectionColor: "#bbb5ff"
+                    selectedTextColor: "#171634"
+                    font.family: root.uiFont
+                    font.pixelSize: 15
+                    verticalAlignment: TextInput.AlignVCenter
+                    text: userModel.lastUser
+                    selectByMouse: true
+                    clip: true
+                    KeyNavigation.tab: passwordEntry
+                }
             }
 
             Text {
@@ -167,16 +199,35 @@ Rectangle {
                 color: "#46466e"
                 font.pixelSize: 12
             }
-            PasswordBox {
-                id: passwordEntry
+            Rectangle {
                 width: parent.width
-                height: 38
-                KeyNavigation.backtab: userEntry
-                KeyNavigation.tab: signInButton
-                Keys.onPressed: function(event) {
-                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                        sddm.login(userEntry.text, passwordEntry.text, root.sessionIndex)
-                        event.accepted = true
+                height: 42
+                radius: 11
+                color: "#ffffff"
+                border.width: passwordEntry.activeFocus ? 2 : 1
+                border.color: passwordEntry.activeFocus ? "#7068e8" : "#b9b6dc"
+
+                TextInput {
+                    id: passwordEntry
+                    anchors.fill: parent
+                    anchors.leftMargin: 13
+                    anchors.rightMargin: 13
+                    color: "#24234d"
+                    selectionColor: "#bbb5ff"
+                    selectedTextColor: "#171634"
+                    font.family: root.uiFont
+                    font.pixelSize: 15
+                    verticalAlignment: TextInput.AlignVCenter
+                    echoMode: TextInput.Password
+                    selectByMouse: true
+                    clip: true
+                    KeyNavigation.backtab: userEntry
+                    KeyNavigation.tab: signInButton
+                    Keys.onPressed: function(event) {
+                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            sddm.login(userEntry.text, passwordEntry.text, root.sessionIndex)
+                            event.accepted = true
+                        }
                     }
                 }
             }
@@ -189,7 +240,7 @@ Rectangle {
                 color: signInMouse.pressed ? "#514abb" : "#635bd2"
                 focus: true
                 KeyNavigation.backtab: passwordEntry
-                KeyNavigation.tab: sessionSelector
+                KeyNavigation.tab: userEntry
 
                 Text {
                     anchors.centerIn: parent
@@ -211,14 +262,19 @@ Rectangle {
                 }
             }
 
-            ComboBox {
-                id: sessionSelector
+            Rectangle {
                 width: parent.width
                 height: 30
-                model: sessionModel
-                index: sessionModel.lastIndex
-                KeyNavigation.backtab: signInButton
-                KeyNavigation.tab: userEntry
+                radius: 9
+                color: "#dedcf6"
+
+                Text {
+                    anchors.centerIn: parent
+                    text: root.russian ? "Сеанс ProtoOS Live" : "ProtoOS Live Session"
+                    color: "#494572"
+                    font.family: root.uiFont
+                    font.pixelSize: 12
+                }
             }
         }
     }

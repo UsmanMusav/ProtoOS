@@ -64,13 +64,15 @@ install -d "$rootfs/etc/sddm.conf.d" "$rootfs/usr/share/color-schemes" \
     "$rootfs/usr/share/plasma/look-and-feel" "$rootfs/usr/share/sddm/themes" \
     "$rootfs/usr/share/xsessions" "$rootfs/usr/local/share/xsessions" \
     "$rootfs/etc/skel/.local/share/wallpapers" "$rootfs/usr/share/icons" \
-    "$rootfs/usr/local/bin" "$rootfs/usr/local/share/applications"
+    "$rootfs/etc/fonts/conf.d" "$rootfs/usr/local/bin" \
+    "$rootfs/usr/local/share/applications"
 cp "$project/rootfs/etc/sddm.conf.d/"*.conf "$rootfs/etc/sddm.conf.d/"
 cp "$project/branding/colors/"*.colors "$rootfs/usr/share/color-schemes/"
 cp -a "$project/branding/look-and-feel/org.protoos.desktop" "$rootfs/usr/share/plasma/look-and-feel/"
 cp -a "$project/branding/sddm/protoos" "$rootfs/usr/share/sddm/themes/"
 cp -a "$project/branding/wallpapers/ProtoOS" "$rootfs/etc/skel/.local/share/wallpapers/"
 cp -a "$project/branding/icons/ProtoOS-Aurora" "$rootfs/usr/share/icons/"
+cp "$project/branding/fonts/70-protoos-rendering.conf" "$rootfs/etc/fonts/conf.d/"
 cp -a "$project/rootfs/etc/skel/." "$rootfs/etc/skel/"
 cp -a "$project/rootfs/usr/share/xsessions/." "$rootfs/usr/share/xsessions/"
 # /usr/local takes precedence over package desktop entries. Keep the package
@@ -99,6 +101,9 @@ grep -Fqx 'Enabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'fadeEnabled=true' "$rootfs/etc/skel/.config/kwinrc"
 grep -Fqx 'Indexing-Enabled=false' "$rootfs/etc/skel/.config/baloofilerc"
 grep -Fqx 'ColorScheme=ProtoOS Proton Dark' "$rootfs/etc/skel/.config/kdeglobals"
+grep -Fqx 'font=Noto Sans,10,-1,5,50,0,0,0,0,0' "$rootfs/etc/skel/.config/kdeglobals"
+test -s "$rootfs/etc/fonts/conf.d/70-protoos-rendering.conf"
+grep -Fq '<family>Noto Sans</family>' "$rootfs/etc/fonts/conf.d/70-protoos-rendering.conf"
 grep -Fqx 'Theme=org.protoos.desktop' "$rootfs/etc/skel/.config/ksplashrc"
 grep -Fqx 'Current=protoos' "$rootfs/etc/sddm.conf.d/20-protoos-theme.conf"
 grep -Fqx 'Session=protoos' "$rootfs/etc/sddm.conf.d/10-protoos-autologin.conf"
@@ -138,12 +143,18 @@ test -s "$rootfs/usr/share/icons/breeze/index.theme"
 test -s "$rootfs/usr/share/icons/hicolor/index.theme"
 for icon in protoos-home protoos-proton protoos-welcome protoos-images protoos-archive \
     protoos-calculator protoos-computer protoos-monitor protoos-recycle \
-    protoos-controlcenter protoos-connect; do
+    protoos-controlcenter protoos-connect protoos-documents protoos-files \
+    protoos-settings protoos-terminal protoos-text; do
     test -s "$rootfs/usr/share/icons/ProtoOS-Aurora/scalable/apps/$icon.svg"
 done
-for command in startplasma-x11 kdialog gwenview ark kcalc plasma-systemmonitor kdeconnect-app; do
+for command in startplasma-x11 kdialog gwenview ark kcalc plasma-systemmonitor kdeconnect-app fc-cache fc-match; do
     chroot "$rootfs" /bin/sh -eu -c "command -v $command"
 done
+# Parse the shipped fontconfig rule and prebuild its cache before the image is
+# published. This makes the Noto Cyrillic UI font available from the first SDDM
+# and Plasma frame, not only after a user's first login.
+chroot "$rootfs" fc-cache -f
+chroot "$rootfs" /bin/sh -eu -c "fc-match 'sans-serif' | grep -qi 'Noto Sans'"
 if [ "$proton_required" = 1 ]; then
     chroot "$rootfs" /bin/sh -eu -c 'command -v proton'
 fi

@@ -105,7 +105,10 @@ immutability=1
 plugin=org.kde.plasma.digitalclock
 
 [Containments][2][Applets][10][Configuration][Appearance]
-showDate=true
+# Keep the Command Bar clock to one high-contrast line. A localized date can
+# be much wider than the panel at Hyper-V's initial resolution; it remains in
+# the clock popup instead of becoming clipped text in the top bar.
+showDate=false
 showSeconds=false
 
 [Containments][2][Applets][11]

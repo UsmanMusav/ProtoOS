@@ -43,6 +43,7 @@ x11-xserver-utils
 xauth
 fontconfig
 fonts-noto-core
+fonts-noto-mono
 fonts-noto-color-emoji
 
 # Basic Live utilities

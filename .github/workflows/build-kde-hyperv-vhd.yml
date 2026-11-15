@@ -55,8 +55,8 @@ jobs:
         with:
           name: ProtoOS-HyperV-${{ inputs.debian_release || 'trixie' }}
           path: |
-            release/ProtoOS-0.5.0-HyperV.vhd
-            release/ProtoOS-0.5.0-HyperV.vhd.sha256
+            release/ProtoOS-0.5.1-HyperV.vhd
+            release/ProtoOS-0.5.1-HyperV.vhd.sha256
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
@@ -70,7 +70,7 @@ jobs:
           # The builder runs under sudo, so take ownership before producing the
           # release-side compressed file as the unprivileged Actions runner.
           sudo chown -R "$(id -u):$(id -g)" release
-          VHD=release/ProtoOS-0.5.0-HyperV.vhd
+          VHD=release/ProtoOS-0.5.1-HyperV.vhd
           xz --threads=0 --compress --keep --force --verbose "$VHD" 2>&1 | tee "${RUNNER_TEMP}/protoos-kde-release.log"
           sha256sum "$VHD.xz" > "$VHD.xz.sha256"
 
@@ -78,17 +78,17 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: v0.5.0-protoos-surface-preview.1
+          RELEASE_TAG: v0.5.1-clarity-color-preview.1
         run: |
           set -euo pipefail
           gh release create "$RELEASE_TAG" \
             --target "$GITHUB_SHA" \
-            --title "ProtoOS 0.5.0 Surface Preview 1" \
-            --notes "ProtoOS Live preview for Hyper-V Generation 2. Rebrands the remaining end-user desktop surfaces: original ProtoOS splash screen, original ProtoOS SDDM sign-in surface, a ProtoOS-named Live session, ProtoOS boot menu identity and a ProtoOS system name in About. The application menu now suppresses duplicate upstream-branded Device Link and Task Manager launchers in favour of the concise ProtoOS names; support-only KDE Connect launchers are hidden. Command Bar, Quick Center, Full Motion, KDE Connect, KScreen, kio-admin and the fsck.ext4 initrd release gate remain included. Technical Debian/Linux/KDE attribution remains available where required by diagnostics and licensing. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
+            --title "ProtoOS 0.5.1 Clarity & Color Preview 1" \
+            --notes "ProtoOS Live preview for Hyper-V Generation 2. Fixes text rendering end to end: Noto Sans is now the explicit Cyrillic UI family, fontconfig enables antialiasing, full hinting and LCD filtering, inactive text has higher contrast, and the Command Bar clock avoids clipping localized dates. The custom SDDM sign-in card now uses explicit dark TextInput colors, larger controls and a compact-resolution layout, so translated labels and typed credentials remain visible. Refreshes every ProtoOS application icon with brighter cyan, violet, coral, amber and mint accents. Command Bar, Quick Center, Full Motion, connected devices and the fsck.ext4 initrd release gate remain included. Extract the .vhd.xz file before attaching the VHD to a SCSI controller. Secure Boot must be disabled for this preview." \
             --prerelease \
-            release/ProtoOS-0.5.0-HyperV.vhd.xz \
-            release/ProtoOS-0.5.0-HyperV.vhd.xz.sha256 \
-            release/ProtoOS-0.5.0-HyperV.vhd.sha256
+            release/ProtoOS-0.5.1-HyperV.vhd.xz \
+            release/ProtoOS-0.5.1-HyperV.vhd.xz.sha256 \
+            release/ProtoOS-0.5.1-HyperV.vhd.sha256
 
       - name: Publish failure diagnostics
         if: ${{ failure() }}

@@ -1,8 +1,15 @@
 [General]
 ColorScheme=ProtoOS Proton Dark
+# Noto Sans has complete Cyrillic coverage and stays crisp at the scaled DPI
+# commonly reported by Hyper-V. Explicit UI roles prevent mismatched fallback
+# fonts or tiny application labels in a freshly created Live home.
+font=Noto Sans,10,-1,5,50,0,0,0,0,0
+menuFont=Noto Sans,10,-1,5,50,0,0,0,0,0
+smallestReadableFont=Noto Sans,8,-1,5,50,0,0,0,0,0
+toolBarFont=Noto Sans,10,-1,5,50,0,0,0,0,0
 
 [Icons]
-# ProtoOS-Aurora supplies the branded app icons and explicitly inherits the
+# ProtoOS Aurora supplies the branded app icons and explicitly inherits the
 # complete Breeze and hicolor themes, preventing missing system/mime icons.
 Theme=ProtoOS-Aurora
 
@@ -18,4 +25,4 @@ SingleClick=false
 activeBackground=31,38,66
 activeForeground=248,250,255
 inactiveBackground=23,28,49
-inactiveForeground=174,185,215
+inactiveForeground=202,211,239
